@@ -62,15 +62,22 @@
 								<div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
 							</a>
 
+							<!--All modules below should ideally be placed in one expanding module-->
+							<div class="sb-sidenav-menu-heading">SCALE Modules</div>
 							<a class="nav-link" href="/scaleSite/scale/mySCALE.php">
 								<div class="sb-nav-link-icon"><i class="fas fa-chalkboard-user"></i></div>
 								My SCALE
+							</a>
+							<a class="nav-link" href="/scaleSite/scale/scaleFAQ.php">
+								<div class="sb-nav-link-icon"><i class="fas fa-chalkboard-user"></i></div>
+								SCALE FAQ
 							</a>
 						</div>
 					</div>
 					<div class="sb-sidenav-footer">
 						<div class="small">Logged in as:</div>
-						b2025bigchungus@pshs.edu.ph                    </div>
+						b2025bigchungus@pshs.edu.ph
+					</div>
 				</nav>
 			</div>
 			<div id="layoutSidenav_content">
