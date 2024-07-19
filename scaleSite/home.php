@@ -11,6 +11,7 @@
 		<title>Dashboard - reckrds</title>
 		<link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
 		<link href="/scaleSite/css/styles.css" rel="stylesheet" />
+		<link href="/scaleSite/css/homeStyle.css" rel="stylesheet" />
 		<script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
 	</head>
 	<body class="sb-nav-fixed">
@@ -61,16 +62,23 @@
 								Attendance Record
 								<div class="sb-sidenav-collapse-arrow"><i class="fas fa-angle-down"></i></div>
 							</a>
-
+							
+							<!--All modules below should ideally be placed in one expanding module-->
+							<div class="sb-sidenav-menu-heading">SCALE Modules</div>
 							<a class="nav-link" href="/scaleSite/scale/mySCALE.php">
 								<div class="sb-nav-link-icon"><i class="fas fa-chalkboard-user"></i></div>
 								My SCALE
+							</a>
+							<a class="nav-link" href="/scaleSite/scale/scaleFAQ.php">
+								<div class="sb-nav-link-icon"><i class="fas fa-chalkboard-user"></i></div>
+								SCALE FAQ
 							</a>
 						</div>
 					</div>
 					<div class="sb-sidenav-footer">
 						<div class="small">Logged in as:</div>
-						b2025bigchungus@pshs.edu.ph                    </div>
+						b2025bigchungus@pshs.edu.ph
+					</div>
 				</nav>
 			</div>
 			<div id="layoutSidenav_content">
@@ -90,8 +98,101 @@
 						<div class="row">
 							<div class="col-xl-3 col-md-6">
 								<div class="card bg-primary text-white mb-4">
-								<div class="card-body">Evaluations</div>
-								<div class="card-body">Teaching Performance Evaluations will be made available on 28 May 2024 at 5.00p. Click on the link on the navigation bar when the service is ready.</div>
+									<div class="card-body">Evaluations</div>
+									<div class="card-body">Teaching Performance Evaluations will be made available on 28 May 2024 at 5.00p. Click on the link on the navigation bar when the service is ready.</div>
+								</div>
+							</div>
+
+						<!-- My SCALE (Adult Supervisors)-->
+						<ol class="breadcrumb mb-4">
+							<li class="breadcrumb-item active">My SCALE</li>
+						</ol>
+
+						<div class="row">
+							<div class="col-xl-3 col-lg-4 col-md-6">
+								<div class="card mb-4 scaleActivityCard">
+									<div class="row scaleActivityHeader">
+										<div class="col col-5 scaleActivityImageBox">
+											<img src="https://variety.com/wp-content/uploads/2021/07/Rick-Astley-Never-Gonna-Give-You-Up.png" class="img-fluid" alt="">
+										</div>
+										<div class="col col-7">
+											<h6 class="card-title align-middle">Activity Title but it's really really really really long for testing purposes</h6>
+										</div>
+									</div>
+									<div class="card-body">
+										<div class="scaleActivityStrands">
+											<span class="badge pill-rounded rounded-circle scaleService">S</span>
+											<span class="badge pill-rounded rounded-circle scaleCreativity">C</span>
+											<span class="badge pill-rounded rounded-circle scaleAction">A</span>
+											<span class="badge pill-rounded rounded-circle scaleLeadership">L</span>
+										</div>
+										<div class="scaleActivityLOs">
+											<span class="badge pill-rounded rounded-circle scaleLO1">1</span>
+											<span class="badge pill-rounded rounded-circle scaleLO2">2</span>
+											<span class="badge pill-rounded rounded-circle scaleLO3">3</span>
+											<span class="badge pill-rounded rounded-circle scaleLO4">4</span>
+											<span class="badge pill-rounded rounded-circle scaleLO5">5</span>
+											<span class="badge pill-rounded rounded-circle scaleLO6">6</span>
+											<span class="badge pill-rounded rounded-circle scaleLO7">7</span>
+											<span class="badge pill-rounded rounded-circle scaleLO8">8</span>
+										</div>
+										<div class="scaleActivityNotifications">
+											<span class="badge pill-rounded position-relative">
+												New Submissions
+												<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+													<span class="visually-hidden">New alerts</span>
+												</span>
+											</span>
+											<span class="badge pill-rounded position-relative">
+												New Applications
+												<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+													<span class="visually-hidden">New alerts</span>
+												</span>
+											</span>
+											<span class="badge pill-rounded position-relative">
+												Information Edited
+												<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+													<span class="visually-hidden">New alerts</span>
+												</span>
+											</span>
+										</div>
+										<a href="#" type="button" class="btn btn-primary scaleActivityMore">View More</a>
+									</div>
+								</div>
+							</div>
+
+							<div class="col-xl-3 col-lg-4 col-md-6">
+								<div class="card mb-4 scaleActivityCard">
+									<div class="row scaleActivityHeader">
+										<div class="col col-5 scaleActivityImageBox">
+											<img src="https://cdn.britannica.com/84/124784-004-DB09EEB5/Amusement-rides-Indiana-State-Fair-Ind-Indianapolis.jpg" class="img-fluid" alt="">
+										</div>
+										<div class="col col-7">
+											<h6 class="card-title align-middle">SY24'-25' Fair Committee</h6>
+										</div>
+									</div>
+									<div class="card-body">
+										<div class="scaleActivityStrands">
+											<span class="badge pill-rounded rounded-circle scaleService">S</span>
+											<span class="badge pill-rounded rounded-circle scaleAction">A</span>
+										</div>
+										<div class="scaleActivityLOs">
+											<span class="badge pill-rounded rounded-circle scaleLO1">1</span>
+											<span class="badge pill-rounded rounded-circle scaleLO3">3</span>
+											<span class="badge pill-rounded rounded-circle scaleLO4">4</span>
+											<span class="badge pill-rounded rounded-circle scaleLO7">7</span>
+										</div>
+										<div class="scaleActivityNotifications">
+											<span class="badge pill-rounded position-relative">
+												New Submissions
+												<span class="position-absolute top-0 start-100 translate-middle p-1 bg-danger border border-light rounded-circle">
+													<span class="visually-hidden">New alerts</span>
+												</span>
+											</span>
+										</div>
+										<a href="#" type="button" class="btn btn-primary scaleActivityMore">View More</a>
+									</div>
+								</div>
 							</div>
 						</div>
 					</div>
