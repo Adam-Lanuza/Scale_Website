@@ -1,0 +1,44 @@
+.scaleActivityCard {
+	border: 0.5px solid black;
+	background-color: rgb(232, 241, 255);
+}
+
+/*Activity Card Header Content*/
+.scaleActivityCard .scaleActivityHeader {
+	border-radius: 0.375rem 0.375rem 0 0;
+	border-bottom: 0.5px solid black;
+	width: 100%;
+
+	margin-left: 0;
+}
+.scaleActivityCard .scaleActivityHeader .col {
+	padding-left: 0;
+	display: flex;
+	align-items: center;
+}
+.scaleActivityHeader img {
+	height: 50px;
+	width: 100%;
+	border-radius: 0.375rem 0 0 0;
+	border-right: 1px solid black;
+
+	object-fit: cover;
+}
+.scaleActivityHeader h6 {
+	max-height: 40px; 
+	margin-bottom: 0;
+
+	overflow: hidden;
+}
+
+/*Activity Card Badges*/
+.activityLOBadge {
+	height: 20px;
+	width: 20px;
+}
+.scaleActivityLOs {
+	margin-bottom: 0.8rem;
+}
+.scaleActivityNotifications {
+    margin-bottom: 0.6rem;
+}
