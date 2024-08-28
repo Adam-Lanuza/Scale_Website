@@ -1,7 +1,0 @@
-NOTE
-
-Some of the links connect to "/" which will redirect you to your localhost. The actual site redirects you to the home page. If ever that happens, just change the singular "/" to "/scaleSite" (or whatever you named the main folder). For example, the link "/evaluate.php" should be changed to "/scaleSite/evaluate.php".
-
-Additionally, a lot of features just don't work (logout and the evaluate page). That shouldn't be a problem for us since we only care about the scale side.
-
-- Adam
