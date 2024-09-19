@@ -12,7 +12,6 @@
 		<link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
 		<link href="/scaleSite/css/styles.css" rel="stylesheet" />
 		<link href="/scaleSite/css/scaleStyle.css" rel="stylesheet"/>
-		<link href="/scaleSite/css/homeStyle.css" rel="stylesheet" />
 		<script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
 	</head>
 	<body class="sb-nav-fixed">
@@ -112,31 +111,26 @@
 
 						<div class="row">
 							<div class="col-xl-3 col-lg-4 col-md-6">
-								<div class="card mb-4 scaleActivityCard">
-									<div class="row scaleActivityHeader">
-										<div class="col col-5 scaleActivityImageBox">
-											<img src="https://variety.com/wp-content/uploads/2021/07/Rick-Astley-Never-Gonna-Give-You-Up.png" class="img-fluid" alt="">
-										</div>
-										<div class="col col-7">
-											<h6 class="card-title align-middle">Activity Title but it's really really really really long for testing purposes</h6>
-										</div>
+								<div class="card mb-4 border-dark">
+									<div class="card-header bg-primary border-dark">
+										<h6 class="card-title align-middle text-white">Activity Title but it's really really really really long for testing purposes.</h6>
 									</div>
 									<div class="card-body">
-										<div class="scaleActivityStrands">
+										<div class="mb-1">
 											<span class="badge activityStrandBadge scaleService">S</span>
 											<span class="badge activityStrandBadge scaleCreativity">C</span>
 											<span class="badge activityStrandBadge scaleAction">A</span>
 											<span class="badge activityStrandBadge scaleLeadership">L</span>
 										</div>
-										<div class="scaleActivityLOs">
-											<span class="badge activityLOBadge scaleLO1">1</span>
-											<span class="badge activityLOBadge scaleLO2">2</span>
-											<span class="badge activityLOBadge scaleLO3">3</span>
-											<span class="badge activityLOBadge scaleLO4">4</span>
-											<span class="badge activityLOBadge scaleLO5">5</span>
-											<span class="badge activityLOBadge scaleLO6">6</span>
-											<span class="badge activityLOBadge scaleLO7">7</span>
-											<span class="badge activityLOBadge scaleLO8">8</span>
+										<div class="mb-2">
+											<span class="badge activityLOBadge scaleLO1" style="height: 20px; width: 20px;">1</span>
+											<span class="badge activityLOBadge scaleLO2" style="height: 20px; width: 20px;">2</span>
+											<span class="badge activityLOBadge scaleLO3" style="height: 20px; width: 20px;">3</span>
+											<span class="badge activityLOBadge scaleLO4" style="height: 20px; width: 20px;">4</span>
+											<span class="badge activityLOBadge scaleLO5" style="height: 20px; width: 20px;">5</span>
+											<span class="badge activityLOBadge scaleLO6" style="height: 20px; width: 20px;">6</span>
+											<span class="badge activityLOBadge scaleLO7" style="height: 20px; width: 20px;">7</span>
+											<span class="badge activityLOBadge scaleLO8" style="height: 20px; width: 20px;">8</span>
 										</div>
 										<div class="row mb-2">
 											<span class="badge activityNotification">
@@ -158,25 +152,20 @@
 							</div>
 
 							<div class="col-xl-3 col-lg-4 col-md-6">
-								<div class="card mb-4 scaleActivityCard">
-									<div class="row scaleActivityHeader">
-										<div class="col col-5 scaleActivityImageBox">
-											<img src="https://cdn.britannica.com/84/124784-004-DB09EEB5/Amusement-rides-Indiana-State-Fair-Ind-Indianapolis.jpg" class="img-fluid" alt="">
-										</div>
-										<div class="col col-7">
-											<h6 class="card-title align-middle">SY24'-25' Fair Committee</h6>
-										</div>
+								<div class="card mb-4 scaleActivityCard border-dark">
+									<div class="card-header bg-primary border-dark">
+										<h6 class="card-title align-middle text-white">ROR</h6>
 									</div>
 									<div class="card-body">
-										<div class="scaleActivityStrands">
+										<div class="mb-1">
 											<span class="badge activityStrandBadge scaleService">S</span>
 											<span class="badge activityStrandBadge scaleAction">A</span>
 										</div>
-										<div class="scaleActivityLOs">
-											<span class="badge activityLOBadge scaleLO1">1</span>
-											<span class="badge activityLOBadge scaleLO3">3</span>
-											<span class="badge activityLOBadge scaleLO4">4</span>
-											<span class="badge activityLOBadge scaleLO7">7</span>
+										<div class="mb-2">
+											<span class="badge activityLOBadge scaleLO1" style="height: 20px; width: 20px;">1</span>
+											<span class="badge activityLOBadge scaleLO3" style="height: 20px; width: 20px;">3</span>
+											<span class="badge activityLOBadge scaleLO4" style="height: 20px; width: 20px;">4</span>
+											<span class="badge activityLOBadge scaleLO7" style="height: 20px; width: 20px;">7</span>
 										</div>
 										<div class="row mb-2">
 											<span class="badge activityNotification">
