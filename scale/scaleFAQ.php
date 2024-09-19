@@ -1,4 +1,6 @@
-
+<?php
+	require_once "..\pdo.php";
+?>
 <!DOCTYPE html>
 <html lang="en">
 	<head>
@@ -12,7 +14,7 @@
 		<link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
 		<link href="/scaleSite/css/styles.css" rel="stylesheet" />
 		<link href="/scaleSite/css/scaleStyle.css" rel="stylesheet"/>
-        <link href="/scaleSite/css/scaleFAQStyle.css" rel="stylesheet" />
+		<link href="/scaleSite/css/scaleFAQStyle.css" rel="stylesheet" />
 		<script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
 	</head>
 	<body class="sb-nav-fixed">
@@ -74,6 +76,10 @@
 								<div class="sb-nav-link-icon"><i class="fas fa-chalkboard-user"></i></div>
 								SCALE FAQ
 							</a>
+							<a class="nav-link" href="/scaleSite/scale/scaleFAQ_Coordinators.php">
+								<div class="sb-nav-link-icon"><i class="fas fa-chalkboard-user"></i></div>
+								SCALE FAQ Editing (For coordinators only)
+							</a>
 						</div>
 					</div>
 					<div class="sb-sidenav-footer">
@@ -91,68 +97,75 @@
 					#####################################
 
 					-->
-
+					
 					<button id="questionNavbarButton" class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#questionSectionNavbar" aria-controls="questionSectionNavbar"> > </button>
 
-					<div id="questionSectionNavbar" class="offcanvas offcanvas-end h-auto" data-bs-backdrop="false" data-bs-scroll="true" aria-labelledby="offcanvasRightLabel">
-						<div class="offcanvas-header" id="questionNavbarTitle">
-							<a class="nav-link offcanvas-header" id="sectionNavbarHeader" href="#">Sections</a>
+					<div id="questionSectionNavbar" class="offcanvas offcanvas-end h-auto p-3" data-bs-backdrop="false" data-bs-scroll="true" aria-labelledby="offcanvasRightLabel">
+						<div class="offcanvas-header p-0" id="questionNavbarTitle">
+							<h6 class="mb-0"><a class="nav-link" id="sectionNavbarHeader" href="#">Sections</a></h6>
 						</div>
-						<div class="offcanvas-body" id="questionNavbarContent">
-							<a href="#processesSection" class="nav-link">Processes</a>
-							<a href="#scalabilitySection" class="nav-link">SCALEability</a>
+						<hr>
+						<div class="offcanvas-body p-0" id="questionNavbarContent">
+							<?php
+								$query = "CALL Get_Question_Categories()";
+								$categoriesquery = $pdo->query($query);
+
+								while ($categoryRow = $categoriesquery->fetch(PDO::FETCH_ASSOC)) {
+									$category = $categoryRow['questioncategory'];
+									echo "<a href='#".$category."Section' class='nav-link'>$category</a>";
+								}
+
+								$categoriesquery->closeCursor();
+							?>
 						</div>
 					</div>
 
 					<h1 class="text-center mt-4">SCALE Frequently Asked Questions</h2>
 
-					<div class="accordion accordion-flush container-fluid mb-3" id="processesSection">
-						<h2>Processes</h2>
+					
+					<div data-bs-spy="scroll" data-bs-target="#questionSectionNavbar" data-bs-root-margin="0px 0px -40%" class="scrollspy-example bg-body-tertiary p-3 rounded-2" tabindex="0">
+					<?php
+						$query = "SELECT * FROM `scalefaq` 
+									WHERE `isactive` != 0
+									ORDER BY `questioncategory`;";
+						$questionsquery = $pdo->query($query);
 
+						$previouscategory = NULL;
+						while ($question = $questionsquery->fetch(PDO::FETCH_ASSOC)) {
+							$qcategory = $question['questioncategory'];
+							$qid = $question['scalefaqid'];
+
+							if ($qcategory != $previouscategory) {
+								// Checks that a previous category existed to prevent closing a div that doesn't exist.
+								if ($previouscategory) {
+									if ($previouscategory) echo '</div>';
+								}
+								
+								echo '<div class="accordion accordion-flush container-fluid mb-3" id="'.$qcategory.'Section">';
+								echo "<h2>$qcategory</h2>";
+								$previouscategory = $qcategory;
+							}
+					?>
 						<div class="accordion-item ms-4">
-							<h2 class="accordion-header" id="questionOne">
-								<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#answerOne" aria-expanded="true" aria-controls="answerOne">
-									How do I join a SCALE Activity?
+							<h2 class="accordion-header" id="<?php echo 'question'.$qid ?>">
+								<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#<?php echo 'answer'.$qid ?>" aria-expanded="true" aria-controls="<?php echo 'answer'.$qid ?>">
+									<?php echo $question['question']?>
 								</button>
 							</h2>
-							<div id="answerOne" class="accordion-collapse collapse" aria-labelledby="questionOne">
+							<div id="<?php echo 'answer'.$qid ?>" class="accordion-collapse collapse" aria-labelledby="<?php echo 'question'.$qid ?>">
 								<div class="accordion-body">
-									Once you find the scale activity you wish to join, an apply button will appear at the bottom of the activity information. Pressing it will send a request to the adult supervisor of the activity who will approve you joining the activity. Afterwards, an alert will be sent to the SCALE Coordinators and your SCALE advisor notiying them that you joined a new activity. After their approval, you will now be registered as part of the activity.
+									<?php echo $question['answer']?>
 								</div>
 							</div>
 						</div>
-
-						<div class="accordion-item ms-4">
-							<h2 class="accordion-header" id="questionTwo">
-								<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#answerTwo" aria-expanded="false" aria-controls="answerTwo">
-									What do I do after finishing the activity?
-								</button>
-							</h2>
-							<div id="answerTwo" class="accordion-collapse collapse" aria-labelledby="questionTwo">
-								<div class="accordion-body">
-									After finishing an activity, you need to submit two things: activity documentation and a reflection. For the activity documentation, you can submit anything (photos, videos, certificates, etc.) as long as it’s accepted by your activity supervisor. For the reflection paper, you need to reflect on your experiences while performing the activity. A set of guide questions are provided to help.
-								</div>
-							</div>
-						</div>
+					<?php
+						}
+						
+						// At the end of the while loop, the last category will still be unclosed. This if statements checks if questions even loaded then closes the category if it did exist.
+						if ($previouscategory) echo '</div>';
+					?>
 					</div>
-
-					<div class="accordion accordion-flush container-fluid mb-3" id="scalabilitySection">
-						<h2>SCALEability</h2>
-
-						<div class="accordion-item ms-4">
-							<h2 class="accordion-header" id="question3">
-								<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#answer3" aria-expanded="true" aria-controls="answer3">
-									What counts as a SCALE activity?
-								</button>
-							</h2>
-							<div id="answer3" class="accordion-collapse collapse" aria-labelledby="question3">
-								<div class="accordion-body">
-									idk tbh
-								</div>
-							</div>
-						</div>
-					</div>
-
+					
 				</main>
 				<footer class="py-4 bg-light mt-auto">
 					<div class="container-fluid px-4">
@@ -168,7 +181,7 @@
 				</footer>
 			</div>
 		</div>
-        <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
+		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 		<script src="/scaleSite/js/scripts.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
 		<script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js" crossorigin="anonymous"></script>
