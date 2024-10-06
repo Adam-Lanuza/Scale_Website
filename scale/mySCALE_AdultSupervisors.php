@@ -96,7 +96,7 @@
 							<span class="mx-3">or</span>
 							<a class="btn btn-primary" href="#" role="button">View Available Activities</a>
 							<span class="mx-3">or</span>
-							<span class="input-group" id="activityCodeForm">
+							<span class="input-group d-inline-flex" id="activityCodeForm" style="width:250px">
 								<input type="text" class="form-control" placeholder="Activity Code"/>
 								<button type="button" class="btn btn-primary" data-mdb-ripple-init>Apply</button>
 							</span>
@@ -114,21 +114,16 @@
 							<div class="accordion accordion-flush">
 								<button class="accordion-header accordion-button collapsed" style="background-color: transparent;" type="button" data-bs-toggle="collapse" data-bs-target="#activityBodyOne" aria-expanded="true" aria-controls="activityBodyOne">
 									<div class="accordion-header row" id="activityHeadOne">
-										<div class="col col-2 activityImageBox">
-											<img src="https://variety.com/wp-content/uploads/2021/07/Rick-Astley-Never-Gonna-Give-You-Up.png">
-										</div>
-										<div class="col col-10 activityInfoBox">
-											<div class="row">
-												<div class="col col-8 mb-3">
-													<h5 class="card-title align-middle">Activity Title but it's really really really really long for testing purposes</h5>
-												</div>
-												<div class="col col-4 scaleActivityStrands">
-													<span class="badge activityStrandBadge">S</span>
-													<span class="badge activityStrandBadge">C</span>
-													<span class="badge activityStrandBadge">A</span>
-													<span class="badge activityStrandBadge">L</span>
-												</div>
+										<div class="activityInfoBox">
+											<div class=" mb-1">
+												<h5 class="card-title align-middle">Activity Title but it's really really really really long for testing purposes</h5>
 											</div>
+											<div class=" scaleActivityStrands mb-3">
+												<span class="badge activityStrandBadge">S</span>
+												<span class="badge activityStrandBadge">C</span>
+												<span class="badge activityStrandBadge">A</span>
+												<span class="badge activityStrandBadge">L</span>
+												</div>
 											<div class="row scaleActivityNotifications">
 												<span class="badge activityNotification">
 													New Submissions
