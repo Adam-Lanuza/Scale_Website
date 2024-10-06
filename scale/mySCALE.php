@@ -95,7 +95,7 @@
                         <a href="/scaleSite/scale/mySCALE_AdultSupervisors.php" class="list-group-item list-group-item-action">Adult Supervisors</a>
                         <a href="/scaleSite/scale/mySCALE_Students.php" class="list-group-item list-group-item-action">Students</a>
                         <a href="#" class="list-group-item list-group-item-action">SCALE Coordinators</a>
-                        <a href="#" class="list-group-item list-group-item-action">SCALE Advisors</a>
+                        <a href="/scaleSite/scale/mySCALE_Advisers.php" class="list-group-item list-group-item-action">SCALE Advisors</a>
                     </div>
 				</main>
 				<footer class="py-4 bg-light mt-auto">
