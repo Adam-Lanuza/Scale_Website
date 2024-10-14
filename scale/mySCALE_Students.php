@@ -1,3 +1,10 @@
+<?php
+	require_once "..\pdo.php";
+
+	$currentstudent = 1;
+	
+	$activities = getSQLData("get_student_activities($currentstudent)");
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -100,177 +107,209 @@
 								<button type="button" class="btn btn-primary" data-mdb-ripple-init>Apply</button>
 							</span>
 						</div>
-						
-						<ol class="breadcrumb mb-4">
-							<li class="breadcrumb-item active">Ongoing Activities</li>
-						</ol>
 
-						<div class="card mb-4">
-							<div class="accordion accordion-flush">
-							<button class="p-3 accordion-button collapsed" style="background-color: transparent;" type="button" data-bs-toggle="collapse" data-bs-target="#activityBodyOne" aria-expanded="true" aria-controls="activityBodyOne">
-									<div id="activityHeadOne">
-										<div class="mb-1">
-											<h5 class="card-title align-middle">Activity Title but it's really really really really long for testing purposes</h5>
+						<?php
+						$statuscategories = [
+							"P" => "Proposed Activities",
+							"IP-I" => "In Progress (Implementation) Activities",
+							"IP-P" => "In Progress (Preperation) Activities",
+							"C" => "Completed Activities"
+						];
+						$previouscategory = NULL;
+						
+						function convertDate($dateString, $activity) {
+							$preconvert = DateTime::createFromFormat('Y-m-d', $activity[$dateString]);
+							return $preconvert->format('F d, Y');
+						}
+
+						foreach($activities as $activity) {
+							$activityid = $activity["activityid"];
+
+							if ($activity["activitystatus"] != $previouscategory) {
+						?>
+								<ol class="breadcrumb mb-4">
+									<li class="breadcrumb-item active"><?=$statuscategories[$activity["activitystatus"]]?></li>
+								</ol>	
+							<?php
+								$previouscategory = $activity["activitystatus"];
+							}?>
+
+							<div class="card mb-4" id="<?= $activity["activityname"]."Card" ?>">
+								<div class="accordion accordion-flush">
+									<button class="p-3 accordion-button collapsed" style="background-color: transparent;" type="button" data-bs-toggle="collapse" data-bs-target="#activityBody<?= $activityid ?>" aria-expanded="true" aria-controls="activityBody<?= $activityid ?>">
+										<div id="activityHead<?= $activityid ?>">
+											<div class="mb-1">
+												<h5 class="card-title align-middle"><?= $activity["activityname"] ?></h5>
+											</div>
+											<div class="mb-3">
+												<?php
+													$activitystrands = getSQLData("get_activity_strands($activityid, $currentstudent)");
+
+													foreach($activitystrands as $strand) {
+														echo "<span class='badge activityStrandBadge'>".$strand["scalereqshortname"]."</span>";
+													}
+												?>
+											</div>
+											<div class="scaleActivityNotifications">
+												<span class="badge activityNotification">
+													New Submissions
+													<span class="activityNotificationDot">New alerts</span>
+												</span>
+												<span class="badge activityNotification">
+													New Applications
+													<span class="activityNotificationDot">New alerts</span>
+												</span>
+												<span class="badge activityNotification">
+													Information Edited
+													<span class="activityNotificationDot">New alerts</span>
+												</span>
+											</div>
 										</div>
-										<div class="mb-3">
-											<span class="badge activityStrandBadge">S</span>
-											<span class="badge activityStrandBadge">C</span>
-											<span class="badge activityStrandBadge">A</span>
-											<span class="badge activityStrandBadge">L</span>
-										</div>
-										<div class="scaleActivityNotifications">
-											<span class="badge activityNotification">
-												New Submissions
-												<span class="activityNotificationDot">New alerts</span>
-											</span>
-											<span class="badge activityNotification">
-												New Applications
-												<span class="activityNotificationDot">New alerts</span>
-											</span>
-											<span class="badge activityNotification">
-												Information Edited
-												<span class="activityNotificationDot">New alerts</span>
-											</span>
-										</div>
-									</div>
-								</button>
-								<div id="activityBodyOne" class="accordion-collapse collapse accordion-body activityInfoContainer" aria-labelledby="activityHeadOne">
-									<div class="row mb-3 activityInformation">
-										<div class="col col-12 col-md-6">
-											<div class="mb-2">
-												<b>Learning Outcomes: </b>
-												<div class="scaleActivityLOs">
-													<span class="badge activityLOBadge scaleLO1">1</span>
-													<span class="badge activityLOBadge scaleLO2">2</span>
-													<span class="badge activityLOBadge scaleLO3">3</span>
-													<span class="badge activityLOBadge scaleLO4">4</span>
-													<span class="badge activityLOBadge scaleLO5">5</span>
-													<span class="badge activityLOBadge scaleLO6">6</span>
-													<span class="badge activityLOBadge scaleLO7">7</span>
-													<span class="badge activityLOBadge scaleLO8">8</span>
+									</button>
+									<div id="activityBody<?= $activityid ?>" class="accordion-collapse collapse accordion-body activityInfoContainer" aria-labelledby="activityHead<?= $activityid ?>">
+										<div class="row mb-3 activityInformation">
+											<div class="col col-12 col-md-6">
+												<div class="mb-2">
+													<b>Learning Outcomes: </b>
+													<div class="scaleActivityLOs">
+														<?php
+														$activitylos = getSQLData("get_activity_los($activityid, $currentstudent)");
+
+														foreach($activitylos as $lo) {
+															echo "<span class='badge activityLOBadge scale".$lo["scalereqshortname"]."'>".substr($lo["scalereqshortname"], 2)."</span>";
+														}
+														?>
+													</div>
+												</div>
+												<div class="mb-2">
+													<b>Planning: </b> <?= convertDate("prepstartdate", $activity)." - ".convertDate("prependdate", $activity); ?>
+												</div>
+												<div class="mb-2">
+													<b>Implementation: </b> <?= convertDate("implementstartdate", $activity)." - ".convertDate("implementenddate", $activity); ?>
+												</div>
+												<div class="mb-2">
+													<b>Venue: </b> <?= $activity["activityvenue"] ?>
+												</div>
+												<div class="mb-2">
+													<b>Adult Supervisors: </b>
+													<table class="table table-bordered table-sm">
+														<thead class="thead-light">
+															<tr>
+																<th scope="col">Name</th>
+																<th scope="col">Position</th>
+																<th scope="col">Company / Organization / Affiliation</th>
+																<th scope="col">Contact Number and Email</th>
+															</tr>
+														</thead>
+														<tbody>
+															<?php
+															$sql = "SELECT `supervisorid`, `adultsupervisors`.`personid`, `activityid`, `position`, `isactive`, `persons`.`fullname` AS 'fullname' FROM `adultsupervisors`
+																	JOIN `persons` ON `adultsupervisors`.`personid` = `persons`.`personid`
+																	WHERE `activityid` = $activityid AND `adultsupervisors`.`isactive`;";
+															$supervisors = $pdo->query($sql);
+
+															while ($supervisor = $supervisors->fetch(PDO::FETCH_ASSOC)) {
+															?>
+															<tr>
+																<td><?= $supervisor["fullname"] ?></td>
+																<td><?= $supervisor["position"] ?></td>
+																<td>To be provided in sir edge's schema</td>
+																<td>
+																	To be provided in sir edge's schema
+																</td>
+															</tr>
+															<?php
+															}
+															?>
+														</tbody>
+													</table>
+												</div>
+												<div class="mb-2">
+													<b>Potential Risks: </b>
+													<table class="table table-bordered table-sm">
+														<thead class="thead-light">
+															<tr>
+																<th scope="col">Risks Identified</th>
+																<th scope="col">Safety Precautions</th>
+															</tr>
+														</thead>
+														<tbody>
+															<?php
+															$sql = "SELECT * FROM `risks`
+																	WHERE `risks`.`activityid` = $activityid
+																		AND `risks`.`isactive`";
+															$risks = $pdo->query($sql);
+															
+															while ($risk = $risks->fetch(PDO::FETCH_ASSOC)) {
+															?>
+															<tr>
+																<td><?= $risk["risk"] ?></td>
+																<td><?= $risk["precaution"] ?></td>
+															</tr>
+															<?php } ?>
+														</tbody>
+													</table>
 												</div>
 											</div>
-											<div class="mb-2">
-												<b>Planning: </b> Mar 7, 2024 - Mar 8, 2024
-											</div>
-											<div class="mb-2">
-												<b>Implementation: </b> Mar 9, 2024 - Mar 10, 2024
-											</div>
-											<div class="mb-2">
-												<b>Venue: </b> Philippine Science High School - Main Campus
-											</div>
-											<div class="mb-2">
-												<b>Adult Supervisors: </b>
-												<table class="table table-bordered table-sm">
-													<thead class="thead-light">
-														<tr>
-															<th scope="col">Name</th>
-															<th scope="col">Position</th>
-															<th scope="col">Company / Organization / Affiliation</th>
-															<th scope="col">Contact Number and Email</th>
-														</tr>
-													</thead>
-													<tbody>
-														<tr>
-															<td scope="row">Sir John Doe</td>
-															<td>Primary Adult Supervisor</td>
-															<td>Comp-Sci Unit</td>
-															<td>
-																0917-123-4567
-																jdoe@pshs.edu.ph
-															</td>
-														</tr>
-														<tr>
-															<td scope="row">Sir Juan dela Cruz</td>
-															<td>Secondary Adult Supervisor</td>
-															<td>English Unit</td>
-															<td>
-																0917-314-1593
-																jdlcruz@pshs.edu.ph
-															</td>
-														</tr>
-													</tbody>
-												</table>
-											</div>
-											<div class="mb-2">
-												<b>Potential Risks: </b>
-												<table class="table table-bordered table-sm">
-													<thead class="thead-light">
-														<tr>
-															<th scope="col">Risks Identified</th>
-															<th scope="col">Safety Precautions</th>
-														</tr>
-													</thead>
-													<tbody>
-														<tr>
-															<td scope="row">Spontaneous Laptop Explosion</td>
-															<td>Keep water sources away from outlets. Proper medical team on standby</td>
-														</tr>
-														<tr>
-															<td scope="row">Lack of internet</td>
-															<td>Perform activities late after class. Set aside budget for getting mobile data</td>
-														</tr>
-													</tbody>
-												</table>
+											<div class="col col-12 col-md-6">
+												<div class="mb-2 container container-fluid activityInfoSection">
+													<h5>Activity Description</h5>
+													<p><?= $activity["activitydescription"] ?></p>
+												</div>
+												<div class="mb-2 container container-fluid activityInfoSection">
+													<h5>Objectives</h5>
+													<p><?= $activity["activitydescription"] ?></p>
+												</div>
+												<div class="mb-2">
+													<b>Materials Needed: </b>
+													<table class="table table-bordered table-sm">
+														<thead class="thead-light">
+															<tr>
+																<th scope="col">Qty</th>
+																<th scope="col">Items</th>
+																<th scope="col">Unit Cost (PHP)</th>
+																<th scope="col">Amount (PHP)</th>
+															</tr>
+														</thead>
+														<tbody>
+															<?php
+															$sql = "SELECT * FROM `materials`
+																	WHERE `materials`.`activityid` = $activityid
+																		AND `materials`.`isactive`";
+															$materials = $pdo->query($sql);
+															
+															$totalcost = 0;
+															while ($material = $materials->fetch(PDO::FETCH_ASSOC)) {
+																$amount = number_format((float)($material["quantity"] * $material["cost"]), 2, '.', '');
+																$totalcost += $amount;
+															?>
+																<tr>
+																	<td class="text-end"><?= $material["quantity"] ?></td>
+																	<td class="text-start"><?= $material["name"] ?></td>
+																	<td class="text-end"><?= $material["cost"] ?></td>
+																	<td class="text-end"><?= $amount ?></td>
+																</tr>
+															<?php } ?>
+															<tr>
+																<td colspan="3">Total</td>
+																<td class="text-end"> <?= number_format((float)$totalcost, 2, '.', '') ?></td>
+															</tr>
+														</tbody>
+													</table>
+												</div>
+											
 											</div>
 										</div>
-										<div class="col col-12 col-md-6">
-											<div class="mb-2 container container-fluid activityInfoSection">
-												<h5>Activity Description</h5>
-												<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Aliquam justo sapien, cursus in ipsum eget, molestie mattis odio. Cras at velit non arcu condimentum consequat vel sed elit. Morbi aliquam purus sit amet mattis bibendum. Vestibulum vitae pharetra diam, eu congue nulla. Morbi egestas nisi id est venenatis, vitae blandit tellus bibendum.</p>
-											</div>
-											<div class="mb-2 container container-fluid activityInfoSection">
-												<h5>Objectives</h5>
-												<p>Donec efficitur, nulla sed commodo vehicula, nibh quam euismod risus, commodo fringilla diam odio nec ligula. Nam suscipit metus sed eleifend consequat. Cras nec commodo nunc.
-
-													Donec iaculis ornare congue. Duis gravida congue nisl, sed congue nibh feugiat nec. Vestibulum ante ipsum primis in faucibus orci luctus et ultrices posuere cubilia curae; Suspendisse sodales ex sed aliquet maximus.</p>
-											</div>
-											<div class="mb-2">
-												<b>Materials Needed: </b>
-												<table class="table table-bordered table-sm">
-													<thead class="thead-light">
-														<tr>
-															<th scope="col">Qty</th>
-															<th scope="col">Items</th>
-															<th scope="col">Unit Cost (PHP)</th>
-															<th scope="col">Amount (PHP)</th>
-														</tr>
-													</thead>
-													<tbody>
-														<tr>
-															<td scope="row">7</td>
-															<td>Laptop</td>
-															<td>20,000</td>
-															<td>70,000</td>
-														</tr>
-														<tr>
-															<td scope="row">100</td>
-															<td>Mobile Data</td>
-															<td>3.14</td>
-															<td>314</td>
-														</tr>
-														<tr>
-															<td scope="row" colspan="3">Total</td>
-															<td>314</td>
-														</tr>
-													</tbody>
-												</table>
-											</div>
-										
+										<div class="row activityActions">
+											<a class="btn btn-outline-dark" href="#" role="button">Edit Activity Information</a>
+											<a class="btn btn-outline-dark" href="#" role="button">Submit File</a>
+											<a class="btn btn-outline-dark" href="#" role="button">Print Form 3 Information</a>
 										</div>
-									</div>
-									<div class="row activityActions">
-										<a class="btn btn-outline-dark" href="#" role="button">Edit Activity Information</a>
-										<a class="btn btn-outline-dark" href="#" role="button">Submit File</a>
-										<a class="btn btn-outline-dark" href="#" role="button">Print Form 3 Information</a>
 									</div>
 								</div>
 							</div>
-						</div>
 
-						<ol class="breadcrumb mb-4">
-							<li class="breadcrumb-item active">Completed Activities</li>
-						</ol>
+						<?php }?>
 					</div>
 				</main>
 				<footer class="py-4 bg-light mt-auto">
