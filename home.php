@@ -1,5 +1,12 @@
-
 <!DOCTYPE html>
+<?php
+	require_once "pdo.php";
+
+	$currentstudent = 1;
+	
+	$activities = getSQLData("get_student_activities($currentstudent)");
+?>
+
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
@@ -110,73 +117,51 @@
 						</ol>
 
 						<div class="row">
-							<div class="col-xl-3 col-lg-4 col-md-6">
-								<div class="card mb-4 border-dark">
-									<div class="card-header bg-primary border-dark">
-										<h6 class="card-title align-middle text-white">Activity Title but it's really really really really long for testing purposes.</h6>
-									</div>
-									<div class="card-body">
-										<div class="mb-1">
-											<span class="badge activityStrandBadge scaleService">S</span>
-											<span class="badge activityStrandBadge scaleCreativity">C</span>
-											<span class="badge activityStrandBadge scaleAction">A</span>
-											<span class="badge activityStrandBadge scaleLeadership">L</span>
+							<?php foreach ($activities as $activity) { $activityid = $activity["activityid"]; ?>
+								<div class="col-xl-3 col-lg-4 col-md-6">
+									<div class="card mb-4 border-dark">
+										<div class="card-header bg-primary border-dark">
+											<h6 class="card-title align-middle text-white"><?= $activity["activityname"] ?></h6>
 										</div>
-										<div class="mb-2">
-											<span class="badge activityLOBadge scaleLO1" style="height: 20px; width: 20px;">1</span>
-											<span class="badge activityLOBadge scaleLO2" style="height: 20px; width: 20px;">2</span>
-											<span class="badge activityLOBadge scaleLO3" style="height: 20px; width: 20px;">3</span>
-											<span class="badge activityLOBadge scaleLO4" style="height: 20px; width: 20px;">4</span>
-											<span class="badge activityLOBadge scaleLO5" style="height: 20px; width: 20px;">5</span>
-											<span class="badge activityLOBadge scaleLO6" style="height: 20px; width: 20px;">6</span>
-											<span class="badge activityLOBadge scaleLO7" style="height: 20px; width: 20px;">7</span>
-											<span class="badge activityLOBadge scaleLO8" style="height: 20px; width: 20px;">8</span>
-										</div>
-										<div class="row mb-2">
-											<span class="badge activityNotification">
-												New Submissions
-												<span class="activityNotificationDot">New alerts</span>
-											</span>
-											<span class="badge activityNotification">
-												New Applications
-												<span class="activityNotificationDot">New alerts</span>
-											</span>
-											<span class="badge activityNotification">
-												Information Edited
-												<span class="activityNotificationDot">New alerts</span>
-											</span>
-										</div>
-										<a href="#" type="button" class="btn btn-primary scaleActivityMore">View More</a>
-									</div>
-								</div>
-							</div>
+										<div class="card-body">
+											<div class="mb-1">
+												<?php
+													$activitystrands = getSQLData("get_activity_strands($activityid, $currentstudent)");
 
-							<div class="col-xl-3 col-lg-4 col-md-6">
-								<div class="card mb-4 scaleActivityCard border-dark">
-									<div class="card-header bg-primary border-dark">
-										<h6 class="card-title align-middle text-white">ROR</h6>
-									</div>
-									<div class="card-body">
-										<div class="mb-1">
-											<span class="badge activityStrandBadge scaleService">S</span>
-											<span class="badge activityStrandBadge scaleAction">A</span>
+													foreach($activitystrands as $strand) {
+														echo "<span class='badge activityStrandBadge'>".$strand["scalereqshortname"]."</span>";
+													}
+												?>
+											</div>
+											<div class="mb-2">
+												<?php
+												$activitylos = getSQLData("get_activity_los($activityid, $currentstudent)");
+
+												foreach($activitylos as $lo) {
+													echo "<span class='badge activityLOBadge scale".$lo["scalereqshortname"]."' style='height: 20px; width: 20px;'>".substr($lo["scalereqshortname"], 2)."</span>";
+												}
+												?>
+											</div>
+											<div class="row mb-2">
+												<span class="badge activityNotification">
+													New Submissions
+													<span class="activityNotificationDot">New alerts</span>
+												</span>
+												<span class="badge activityNotification">
+													New Applications
+													<span class="activityNotificationDot">New alerts</span>
+												</span>
+												<span class="badge activityNotification">
+													Information Edited
+													<span class="activityNotificationDot">New alerts</span>
+												</span>
+											</div>
+											<a href="scale/mySCALE_Students.php#<?= $activity["activityname"] ?>Card" type="button" class="btn btn-primary scaleActivityMore">View More</a>
 										</div>
-										<div class="mb-2">
-											<span class="badge activityLOBadge scaleLO1" style="height: 20px; width: 20px;">1</span>
-											<span class="badge activityLOBadge scaleLO3" style="height: 20px; width: 20px;">3</span>
-											<span class="badge activityLOBadge scaleLO4" style="height: 20px; width: 20px;">4</span>
-											<span class="badge activityLOBadge scaleLO7" style="height: 20px; width: 20px;">7</span>
-										</div>
-										<div class="row mb-2">
-											<span class="badge activityNotification">
-												New Submissions
-												<span class="activityNotificationDot">New alerts</span>
-											</span>
-										</div>
-										<a href="#" type="button" class="btn btn-primary scaleActivityMore">View More</a>
 									</div>
 								</div>
-							</div>
+
+							<?php } ?>
 						</div>
 						
 					</div>

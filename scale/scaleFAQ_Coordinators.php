@@ -19,15 +19,36 @@
 	}
 
 	//////////////////////
+	//		Select		//
+	//////////////////////
+
+	// Selecting all categories
+	$sql = "CALL Get_Question_Categories()";
+	$categoriesquery = $pdo->query($sql);
+
+	$questionCategories = [];
+	
+	while ($categoryRow = $categoriesquery->fetch(PDO::FETCH_ASSOC)) {
+		array_push($questionCategories, $categoryRow['category']);
+	}
+	$categoriesquery->closeCursor();
+
+	// Selecting all questions
+	$questions = getSQLData("Get_All_Questions()");
+	
+	//////////////////////
 	//		Edit		//
 	//////////////////////
 
 	// Updates the database after receiving info from POST after the refresh
 	if (isset($_SESSION["edit"]) && isset($_SESSION["scalefaqid"]) && !empty($_SESSION["question"]) && !empty($_SESSION["finalCategory"]) && !empty($_SESSION["answer"])) {
-		
-        $sql = "CALL `edit_question` (10, `test`, `Meow`, `ing`)";
-		$stmt = $pdo->prepare($sql);
-		$stmt->execute(array());
+		$stmt = $pdo->prepare("CALL `Edit_Question` (:qid, :q, :c, :a)");
+		$stmt->execute(array(
+			':qid' => $_SESSION["scalefaqid"],
+			':q' => $_SESSION["question"],
+			':c' => $_SESSION["finalCategory"],
+			':a' => $_SESSION["answer"]
+		));
 
 		$_SESSION["success"] = "FAQ Updated Successfully";
 		clearSessionValues(["scalefaqid", "question", "category", "newCategory", "finalCategory", "answer"]);
@@ -61,9 +82,7 @@
 
 	// Sets the 'isactive' variable of the given scalefaqid to false
 	if (isset($_SESSION["delete"]) && isset($_SESSION["scalefaqid"])) {
-		$sql = "UPDATE scalefaq SET `isactive` = 0
-				WHERE scalefaqid = :id;";
-		$stmt = $pdo->prepare($sql);
+		$stmt = $pdo->prepare("CALL Delete_Question(:id)");
 		$stmt -> execute(array(":id" => $_SESSION["scalefaqid"]));
 
 		$_SESSION['success'] = "Question ".$_SESSION["scalefaqid"]." Succesfully Deleted";
@@ -85,14 +104,13 @@
 	//////////////////////
 
 	if (!empty($_SESSION["question"]) && !empty($_SESSION["finalCategory"]) && !empty($_SESSION["answer"])) {
-		$sql = "INSERT INTO scalefaq (`question`, `questioncategory`, `answer`)
-				VALUES (:q, :c, :a)";
-		$stmt = $pdo->prepare($sql);
+		$stmt = $pdo->prepare("CALL Add_Question(:q, :c, :a)");
 		$stmt->execute(array(
 			":q" => $_SESSION["question"],
 			':c' => $_SESSION["finalCategory"],
 			':a' => $_SESSION["answer"]
 		));
+
 		$_SESSION["success"] = "FAQ Successfully Added";
 		clearSessionValues(["question", "category", "answer"]);
 		header("Location: scaleFAQ_Coordinators.php");
@@ -223,15 +241,9 @@
 						<hr>
 						<div class="offcanvas-body p-0" id="questionNavbarContent">
 							<?php
-								$query = "CALL Get_Question_Categories()";
-								$categoriesquery = $pdo->query($query);
-
-								while ($categoryRow = $categoriesquery->fetch(PDO::FETCH_ASSOC)) {
-									$category = $categoryRow['questioncategory'];
+								foreach ($questionCategories as $category) {
 									echo "<a href='#".$category."Section' class='nav-link'>$category</a>";
 								}
-
-								$categoriesquery->closeCursor();
 							?>
 						</div>
 					</div>
@@ -261,14 +273,9 @@
 												<label for="category" class="form-label">Question Category</label>
 												<div class="col-6">
 													<select name="category" class="form-select categoryInput" onChange="checkOption(this, 'editModal')"  value="">
-														<?php
-															$sql = "CALL Get_Question_Categories()";
-															$categoriesquery = $pdo->query($sql);
-							
-															while ($categoryRow = $categoriesquery->fetch(PDO::FETCH_ASSOC)) { 
-																$category = $categoryRow['questioncategory'];?>
+														<?php foreach ($questionCategories as $category) { ?>
 																<option value="<?= $category ?>"><?= $category ?></option>
-														<?php } $categoriesquery->closeCursor(); ?>
+														<?php } ?>
 														<option value="newCategory">New Category</option>
 													</select>
 												</div>
@@ -316,14 +323,9 @@
 												<label for="category" class="form-label">Question Category</label>
 												<div class="col-6">
 													<select name="category" class="form-select categoryInput" disabled>
-														<?php
-															$sql = "CALL Get_Question_Categories()";
-															$categoriesquery = $pdo->query($sql);
-							
-															while ($categoryRow = $categoriesquery->fetch(PDO::FETCH_ASSOC)) { 
-																$category = $categoryRow['questioncategory'];?>
+														<?php foreach ($questionCategories as $category) { ?>
 																<option value="<?= $category ?>"><?= $category ?></option>
-														<?php } $categoriesquery->closeCursor(); ?>
+														<?php } ?>
 														<option value="newCategory">New Category</option>
 													</select>
 												</div>
@@ -373,14 +375,9 @@
 												<label for="category" class="form-label">Question Category</label>
 												<div class="col-6">
 													<select name="category" class="form-select categoryInput" onChange="checkOption(this, 'addModal')" value="">
-														<?php
-															$sql = "CALL Get_Question_Categories()";
-															$categoriesquery = $pdo->query($sql);
-							
-															while ($categoryRow = $categoriesquery->fetch(PDO::FETCH_ASSOC)) { 
-																$category = htmlentities($categoryRow['questioncategory']);?>
+														<?php foreach ($questionCategories as $category) { ?>
 																<option value="<?= $category ?>"><?= $category ?></option>
-														<?php } $categoriesquery->closeCursor(); ?>
+														<?php } ?>
 														<option value="newCategory">New Category</option>
 													</select>
 												</div>
@@ -458,7 +455,7 @@
 							var modal = document.getElementById(modalID);
 
 							modal.querySelector(".questionInput").value = "";
-							modal.querySelector(".categoryInput").value = "";
+							modal.querySelector(".categoryInput").value = "<?= $questionCategories[0] ?>";
 							modal.querySelector(".newCategoryInput").value = "";
 							modal.querySelector(".newCategoryInput").disabled = true;
 							modal.querySelector(".answerInput").value = "";
@@ -500,16 +497,12 @@
 
 					<!-- Loop that displays all questions -->
 					<?php
-						$sql = "SELECT * FROM `scalefaq` 
-								WHERE `isactive` != 0
-								ORDER BY `questioncategory`;";
-						$questionsquery = $pdo->query($sql);
 
 						$previouscategory = NULL;
-						while ($question = $questionsquery->fetch(PDO::FETCH_ASSOC)) {
+						foreach($questions as $question) {
 							$qid = $question['scalefaqid'];
 							$qquestion = $question['question'];
-							$qcategory = $question['questioncategory'];
+							$qcategory = $question['category'];
 							$qanswer = $question['answer'];
 
 							// Checks that a previous category existed to prevent closing a div that doesn't exist.

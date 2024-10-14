@@ -1,5 +1,23 @@
 <?php
 	require_once "..\pdo.php";
+
+	//////////////////////
+	//		Select		//
+	//////////////////////
+
+	// Selecting all categories
+	$sql = "CALL Get_Question_Categories()";
+	$categoriesquery = $pdo->query($sql);
+
+	$questionCategories = [];
+	
+	while ($categoryRow = $categoriesquery->fetch(PDO::FETCH_ASSOC)) {
+		array_push($questionCategories, $categoryRow['category']);
+	}
+	$categoriesquery->closeCursor();
+
+	// Selecting all questions
+	$questions = getSQLData("Get_All_Questions()");
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -107,15 +125,9 @@
 						<hr>
 						<div class="offcanvas-body p-0" id="questionNavbarContent">
 							<?php
-								$query = "CALL Get_Question_Categories()";
-								$categoriesquery = $pdo->query($query);
-
-								while ($categoryRow = $categoriesquery->fetch(PDO::FETCH_ASSOC)) {
-									$category = $categoryRow['questioncategory'];
+								foreach ($questionCategories as $category) {
 									echo "<a href='#".$category."Section' class='nav-link'>$category</a>";
 								}
-
-								$categoriesquery->closeCursor();
 							?>
 						</div>
 					</div>
@@ -125,15 +137,15 @@
 					
 					<div data-bs-spy="scroll" data-bs-target="#questionSectionNavbar" data-bs-root-margin="0px 0px -40%" class="scrollspy-example bg-body-tertiary p-3 rounded-2" tabindex="0">
 					<?php
-						$query = "SELECT * FROM `scalefaq` 
-									WHERE `isactive` != 0
-									ORDER BY `questioncategory`;";
-						$questionsquery = $pdo->query($query);
 
 						$previouscategory = NULL;
-						while ($question = $questionsquery->fetch(PDO::FETCH_ASSOC)) {
-							$qcategory = $question['questioncategory'];
+
+						foreach($questions as $question) {
+
 							$qid = $question['scalefaqid'];
+							$qquestion = $question['question'];
+							$qcategory = $question['category'];
+							$qanswer = $question['answer'];
 
 							if ($qcategory != $previouscategory) {
 								// Checks that a previous category existed to prevent closing a div that doesn't exist.
@@ -149,12 +161,12 @@
 						<div class="accordion-item ms-4">
 							<h2 class="accordion-header" id="<?php echo 'question'.$qid ?>">
 								<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#<?php echo 'answer'.$qid ?>" aria-expanded="true" aria-controls="<?php echo 'answer'.$qid ?>">
-									<?php echo $question['question']?>
+									<?php echo $qquestion?>
 								</button>
 							</h2>
 							<div id="<?php echo 'answer'.$qid ?>" class="accordion-collapse collapse" aria-labelledby="<?php echo 'question'.$qid ?>">
 								<div class="accordion-body">
-									<?php echo $question['answer']?>
+									<?php echo $qanswer?>
 								</div>
 							</div>
 						</div>

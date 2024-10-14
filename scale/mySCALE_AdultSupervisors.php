@@ -11,8 +11,7 @@
 		<title>Dashboard - reckrds</title>
 		<link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
 		<link href="/scaleSite/css/styles.css" rel="stylesheet" />
-        <link href="/scaleSite/css/scaleStyle.css" rel="stylesheet"/>
-		<link href="/scaleSite/css/mySCALEStyle.css" rel="stylesheet" />
+		<link href="/scaleSite/css/scaleStyle.css" rel="stylesheet"/>
 		<script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
 	</head>
 	<body class="sb-nav-fixed">
@@ -87,7 +86,7 @@
 				<div class="container-fluid px-4">
 						<h1 class="mt-4">My SCALE</h1>
 
-                        <ol class="breadcrumb mb-4">
+						<ol class="breadcrumb mb-4">
 							<li class="breadcrumb-item active">Add Activity</li>
 						</ol>
 
