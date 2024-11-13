@@ -23,10 +23,10 @@
 	$activities;
 
 	if($studentid != 0) {
-		$activities = getSQLData("Get_Student_Activities($studentid)");
+		$activities = getSQLData("Call Get_Student_Activities($studentid)");
 	}
 	else {
-		$activities = getSQLData("Get_Supervisor_Activities($personid)");
+		$activities = getSQLData("Call Get_Supervisor_Activities($personid)");
 	}
 ?>
 
@@ -167,7 +167,7 @@
 											</div>
 											<div class="mb-3">
 												<?php
-													$activitystrands = getSQLData("get_activity_strands($activityid, $studentid)");
+													$activitystrands = getSQLData("Call get_activity_strands($activityid, $studentid)");
 
 													foreach($activitystrands as $strand) {
 														echo "<span class='badge activityStrandBadge'>".$strand["scalereqshortname"]."</span>";
@@ -183,7 +183,7 @@
 													<b>Learning Outcomes: </b>
 													<div class="scaleActivityLOs">
 														<?php
-														$activitylos = getSQLData("get_activity_los($activityid, $studentid)");
+														$activitylos = getSQLData("Call get_activity_los($activityid, $studentid)");
 
 														foreach($activitylos as $lo) {
 															echo "<span class='badge activityLOBadge scale".$lo["scalereqshortname"]."'>".substr($lo["scalereqshortname"], 2)."</span>";
@@ -313,7 +313,7 @@
 										<div class="row activityActions">
 											<a class="btn btn-outline-dark" href="#" role="button">Edit Activity Information</a>
 											<a class="btn btn-outline-dark" href="managePeople.php?activityId=<?= $activityid ?>" role="button">Manage People</a>
-											<a class="btn btn-outline-dark" href="#" role="button">Manage Materials and Risks</a>
+											<a class="btn btn-outline-dark" href="manageMaterialsRisks.php?activityId=<?= $activityid ?>" role="button">Manage Materials and Risks</a>
 											<a class="btn btn-outline-dark" href="#" role="button">Submit File</a>
 											<a class="btn btn-outline-dark" href="#" role="button">Print Form 3 Information</a>
 										</div>
