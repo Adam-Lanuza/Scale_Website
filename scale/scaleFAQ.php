@@ -1,12 +1,33 @@
 <?php
 	require_once "..\pdo.php";
+	
+	$currentUser = 2;
+
+	session_start();
+
+	function clearSessionValues($fields) {
+		array_push($fields, "edit", "delete", "add");
+		foreach ($fields as $field) {
+			if (isset($_SESSION[$field])) {
+				unset($_SESSION[$field]);
+			}
+		}
+	}
+
+	// Clears all session data on [ Cancel ] press
+	if (isset($_POST["cancel"])) {
+		clearSessionValues(["scalefaqid", "question", "category", "newCategory", "finalCategory", "answer"]);
+		header("Location: scaleFAQ_Coordinators.php");
+	}
 
 	//////////////////////
 	//		Select		//
 	//////////////////////
 
 	// Selecting all categories
-	$sql = "CALL Get_Question_Categories()";
+	$sql = "SELECT DISTINCT `scalefaq`.`category` FROM `scalefaq`
+			WHERE `scalefaq`.`isactive` = TRUE
+			ORDER BY `category`";
 	$categoriesquery = $pdo->query($sql);
 
 	$questionCategories = [];
@@ -17,7 +38,120 @@
 	$categoriesquery->closeCursor();
 
 	// Selecting all questions
-	$questions = getSQLData("Get_All_Questions()");
+	$questions = getSQLData("Call Get_All_Questions()");
+	
+	// Checking if the user is a coordinator
+	$sql = "SELECT
+				`coordinators`.`coordinatorid`,
+				`employees`.`employeeid`,
+				`users`.`userid`,
+				`acadyear`
+			FROM `coordinators`
+			JOIN `employees` ON `employees`.`employeeid` = `coordinators`.`employeeid`
+			JOIN `users` ON `users`.`userid` = `employees`.`userid`
+			WHERE `users`.`userid` = $currentUser
+				AND `coordinators`.`isactive`;";
+	
+	$isCoordinator = !empty(getSQLData($sql));
+
+	//////////////////////
+	//		Edit		//
+	//////////////////////
+
+	// Updates the database after receiving info from POST after the refresh
+	if (isset($_SESSION["edit"]) && isset($_SESSION["scalefaqid"]) && !empty($_SESSION["question"]) && !empty($_SESSION["finalCategory"]) && !empty($_SESSION["answer"])) {
+		$stmt = $pdo->prepare("CALL `Edit_Question` (:qid, :q, :c, :a)");
+		$stmt->execute(array(
+			':qid' => $_SESSION["scalefaqid"],
+			':q' => $_SESSION["question"],
+			':c' => $_SESSION["finalCategory"],
+			':a' => $_SESSION["answer"]
+		));
+
+		$_SESSION["success"] = "FAQ Updated Successfully";
+		clearSessionValues(["scalefaqid", "question", "category", "newCategory", "finalCategory", "answer"]);
+		header("Location: scaleFAQ_Coordinators.php");
+		return;
+	}
+
+	// Sends the form data from POST to SESSION on [ Edit ] press
+	if (isset($_POST["edit"]) && isset($_POST["scalefaqid"]) && isset($_POST["question"]) && isset($_POST["category"]) && isset($_POST["answer"])) {
+		$_SESSION["edit"] = $_POST["edit"];
+		$_SESSION["scalefaqid"] = $_POST["scalefaqid"];
+		$_SESSION["question"] = $_POST["question"];
+		$_SESSION["answer"] = $_POST["answer"];
+
+		if ($_POST["category"] == "newCategory") {
+			if (!empty($_POST["newCategory"])) {
+				$_SESSION["finalCategory"] = $_POST["newCategory"];
+			}
+		}
+		else {
+			$_SESSION["finalCategory"] = $_POST["category"];
+			
+		}
+		header("Location: scaleFAQ_Coordinators.php");
+		return;
+	}
+
+	//////////////////////
+	//		Delete		//
+	//////////////////////
+
+	// Sets the 'isactive' variable of the given scalefaqid to false
+	if (isset($_SESSION["delete"]) && isset($_SESSION["scalefaqid"])) {
+		$stmt = $pdo->prepare("CALL Delete_Question(:id)");
+		$stmt -> execute(array(":id" => $_SESSION["scalefaqid"]));
+
+		$_SESSION['success'] = "Question ".$_SESSION["scalefaqid"]." Succesfully Deleted";
+		clearSessionValues(["scalefaqid"]);
+		header("Location: scaleFAQ_Coordinators.php");
+		return;
+	}
+
+	// Sends the form data from POST to SESSION on [ Delete ] press
+	if (isset($_POST["delete"]) && isset($_POST["scalefaqid"])) {
+		$_SESSION["delete"] = $_POST["delete"];
+		$_SESSION["scalefaqid"] = $_POST["scalefaqid"];
+		header("Location: scaleFAQ_Coordinators.php");
+		return;
+	}
+
+	//////////////////////
+	//		Add			//
+	//////////////////////
+
+	if (!empty($_SESSION["question"]) && !empty($_SESSION["finalCategory"]) && !empty($_SESSION["answer"]) && !empty($currentUser)) {
+		$stmt = $pdo->prepare("CALL Add_Question(:q, :c, :a, :i)");
+		$stmt->execute(array(
+			":q" => $_SESSION["question"],
+			':c' => $_SESSION["finalCategory"],
+			':a' => $_SESSION["answer"],
+			':i' => $currentUser
+		));
+
+		$_SESSION["success"] = "FAQ Successfully Added";
+		clearSessionValues(["question", "category", "answer"]);
+		header("Location: scaleFAQ_Coordinators.php");
+		return;
+	}
+
+	if (isset($_POST["add"]) && isset($_POST["question"]) && isset($_POST["category"]) && isset($_POST["answer"])) {
+		$_SESSION["question"] = $_POST["question"];
+		$_SESSION["answer"] = $_POST["answer"];
+		$_SESSION["category"] = $_POST["category"];
+
+		if ($_POST["category"] == "newCategory") {
+			if (!empty($_POST["newCategory"])) {
+				$_SESSION["finalCategory"] = $_POST["newCategory"];
+			}
+		}
+		else {
+			$_SESSION["finalCategory"] = $_POST["category"];
+		}
+		header("Location: scaleFAQ_Coordinators.php");
+		return;
+	}	
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -94,10 +228,6 @@
 								<div class="sb-nav-link-icon"><i class="fas fa-chalkboard-user"></i></div>
 								SCALE FAQ
 							</a>
-							<a class="nav-link" href="/scaleSite/scale/scaleFAQ_Coordinators.php">
-								<div class="sb-nav-link-icon"><i class="fas fa-chalkboard-user"></i></div>
-								SCALE FAQ Editing (For coordinators only)
-							</a>
 						</div>
 					</div>
 					<div class="sb-sidenav-footer">
@@ -115,7 +245,12 @@
 					#####################################
 
 					-->
-					
+
+					<!--////////////////////////////////
+					////	Pop-out/Hidden html		////
+					/////////////////////////////////-->
+
+					<!-- Side Navigation Bar -->
 					<button id="questionNavbarButton" class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#questionSectionNavbar" aria-controls="questionSectionNavbar"> > </button>
 
 					<div id="questionSectionNavbar" class="offcanvas offcanvas-end h-auto p-3" data-bs-backdrop="false" data-bs-scroll="true" aria-labelledby="offcanvasRightLabel">
@@ -132,25 +267,271 @@
 						</div>
 					</div>
 
+					<?php if($isCoordinator) { ?>
+					<!-- Create, Update, and Delete Modals -->
+					<div class="modal modal-lg fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+						<div class="modal-dialog">
+							<div class="modal-content">
+								<div class="modal-header">
+									<h5 class="modal-title" id="editModalLabel">Edit Question</h5>
+									<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+								</div>
+
+								<form onsubmit="return checkFilledValues('editModal')" method="POST">
+									<div class="modal-body">
+										<h5 class="mb-2 text-center">Are you sure you want to edit this question?</h5>
+										
+										<div class="errorBox text-center text-danger mb-2"></div>
+
+										<div class="row mt-2">
+											<div class="col-12 col-md-6 mb-3">
+												<label for="question" class="form-label">Question</label>
+												<input type="text" name="question" placeholder="Question" class="form-control questionInput"/>
+											</div>
+
+											<div class="mb-2 col-12 col-md-6 mb-3 row">
+												<label for="category" class="form-label">Question Category</label>
+												<div class="col-6">
+													<select name="category" class="form-select categoryInput" onChange="checkOption(this, 'editModal')"  value="">
+														<?php foreach ($questionCategories as $category) { ?>
+																<option value="<?= $category ?>"><?= $category ?></option>
+														<?php } ?>
+														<option value="newCategory">New Category</option>
+													</select>
+												</div>
+												<div class="col-6">
+													<input type="text" name="newCategory" placeholder="New Category" class="form-control w-3 newCategoryInput" disabled/>
+												</div>
+											</div>
+										</div>
+
+										<div class="mb-3">
+											<label for="answer" class="form-label">Answer</label>
+											<textarea name="answer" placeholder="Answer" class="form-control answerInput" rows="5"></textarea>
+										</div>
+									</div>
+
+									<div class="modal-footer">
+										<input type="hidden" class="scalefaqidInput" name="scalefaqid">
+										<button type="button" class="btn btn-secondary" onclick="clearForm('editModal')" data-bs-dismiss="modal">Cancel</button>
+										<button type="submit" class="btn btn-primary" name="edit" value="Edit">Save Changes</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+					
+
+					<div class="modal modal-lg fade" id="deleteModal" tabindex="-1" aria-labelledby="deleteModalLabel" aria-hidden="true">
+						<div class="modal-dialog">
+							<div class="modal-content">
+								<div class="modal-header">
+									<h5 class="modal-title" id="deleteModalLabel">Delete Question</h5>
+									<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+								</div>
+
+								<form method="POST">
+									<div class="modal-body">
+										<h5 class="mb-4 text-center">Are you sure you want to delete this question?</h5>
+										
+										<div class="row">
+											<div class="col-12 col-md-6 mb-3">
+												<label for="question" class="form-label">Question</label>
+												<input type="text" name="question" placeholder="Question" class="form-control questionInput" disabled/>
+											</div>
+
+											<div class="mb-2 col-12 col-md-6 mb-3 row">
+												<label for="category" class="form-label">Question Category</label>
+												<div class="col-6">
+													<select name="category" class="form-select categoryInput" disabled>
+														<?php foreach ($questionCategories as $category) { ?>
+																<option value="<?= $category ?>"><?= $category ?></option>
+														<?php } ?>
+														<option value="newCategory">New Category</option>
+													</select>
+												</div>
+												<div class="col-6">
+													<input type="text" id="newCategoryInput" name="newCategory" placeholder="New Category" class="form-control w-3" disabled/>
+												</div>
+											</div>
+										</div>
+
+										<div class="mb-3">
+											<label for="answer" class="form-label">Answer</label>
+											<textarea name="answer" placeholder="Answer" class="form-control answerInput" rows="5" disabled></textarea>
+										</div>
+									</div>
+
+									<div class="modal-footer">
+										<input type="hidden" class="scalefaqidInput" name="scalefaqid">
+										<button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+										<button type="submit" class="btn btn-primary" name="delete" value="Delete">Delete</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+
+					<div class="modal modal-lg fade" id="addModal" tabindex="-1" aria-labelledby="addModalLabel" aria-hidden="true">
+						<div class="modal-dialog">
+							<div class="modal-content">
+								<div class="modal-header">
+									<h5 class="modal-title" id="addModalLabel">Add Question</h5>
+									<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+								</div>
+
+								<form onsubmit="return checkFilledValues('addModal')" method="POST">
+									<div class="modal-body">
+										<h5 class="mb-2 text-center">Add a new question</h5>
+										
+										<div class="errorBox text-center text-danger mb-2"></div>
+
+										<div class="row mt-2">
+											<div class="col-12 col-md-6 mb-3">
+												<label for="question" class="form-label">Question</label>
+												<input type="text" name="question" placeholder="Question" class="form-control questionInput"/>
+											</div>
+
+											<div class="mb-2 col-12 col-md-6 mb-3 row">
+												<label for="category" class="form-label">Question Category</label>
+												<div class="col-6">
+													<select name="category" class="form-select categoryInput" onChange="checkOption(this, 'addModal')" value="">
+														<?php foreach ($questionCategories as $category) { ?>
+																<option value="<?= $category ?>"><?= $category ?></option>
+														<?php } ?>
+														<option value="newCategory">New Category</option>
+													</select>
+												</div>
+												<div class="col-6">
+													<input type="text" name="newCategory" placeholder="New Category" class="form-control w-3 newCategoryInput" disabled/>
+													
+												</div>
+											</div>
+										</div>
+
+										<div class="mb-3">
+											<label for="answer" class="form-label">Answer</label>
+											<textarea name="answer" placeholder="Answer" class="form-control answerInput" rows="5"></textarea>
+										</div>
+									</div>
+
+									<div class="modal-footer">
+										<input type="hidden" class="scalefaqidInput" name="scalefaqid" value="-1">
+										<button type="button" class="btn btn-secondary" onclick="clearForm('addModal')" data-bs-dismiss="modal">Cancel</button>
+										<button type="submit" class="btn btn-primary" name="add" value="add">Add Question</button>
+									</div>
+								</form>
+							</div>
+						</div>
+					</div>
+
+					<!-- Modal Scripts -->
+					<script>
+						function checkFilledValues(modalID) {
+							var modal = document.getElementById(modalID);
+
+							// Gets the different Input boxes
+
+							var scalefaqidInput = modal.querySelector(".scalefaqidInput");
+							var questionInput = modal.querySelector(".questionInput");
+							var categoryInput = modal.querySelector(".categoryInput");
+							var newCategoryInput = modal.querySelector(".newCategoryInput");
+							var answerInput = modal.querySelector(".answerInput");
+
+							// Current State of all the Input Boxes
+							console.log((scalefaqidInput.value));
+							console.log((questionInput.value))
+							console.log((newCategoryInput.value) || (newCategoryInput.disabled))
+							console.log((answerInput.value))
+
+							// Checks that all the input boxes have content
+							// Category should either be disabled (selecting a previous category) or filled (making a new category)
+							if ((scalefaqidInput.value) && (questionInput.value) && ((newCategoryInput.value) || (newCategoryInput.disabled)) && (answerInput.value)) {
+								console.log("pass")
+								return true;
+							}
+							else {
+								console.log("fail")
+								var errorBox = modal.querySelector(".errorBox");
+								errorBox.textContent = "Error: Please ensure that all fields are filled";
+								return false;
+							}
+						}
+						function insertData (ev, modal) {
+							// Button that triggered the modal
+							var button = ev.relatedTarget;
+
+							// Gathers the question data from the given scalefaqid
+							var qid = button.getAttribute('data-bs-qid');
+
+							// Gets the value stored in the questionBox, the input location in the modal and equates the two values
+							modal.querySelector(".scalefaqidInput").value = qid;
+							modal.querySelector(".questionInput").value = document.getElementById(`faq${qid}Question`).value;
+							modal.querySelector(".categoryInput").value = document.getElementById(`faq${qid}Category`).value;
+							modal.querySelector(".answerInput").value = document.getElementById(`faq${qid}Answer`).value;
+						}
+						function clearForm (modalID){
+							console.log("clear values")
+
+							var modal = document.getElementById(modalID);
+
+							modal.querySelector(".questionInput").value = "";
+							modal.querySelector(".categoryInput").value = "<?= $questionCategories[0] ?>";
+							modal.querySelector(".newCategoryInput").value = "";
+							modal.querySelector(".newCategoryInput").disabled = true;
+							modal.querySelector(".answerInput").value = "";
+						}
+						function checkOption(obj, modalID) {
+							var input = document.getElementById(modalID).querySelector(".newCategoryInput");
+							if (obj.value != "newCategory") {
+								input.disabled = true;
+								input.value = "";
+							}
+							else {
+								input.disabled = false;
+							}
+						}
+						document.getElementById('editModal').addEventListener('show.bs.modal', function(){insertData(event, this)})
+
+						document.getElementById('deleteModal').addEventListener('show.bs.modal', function(){insertData(event, this)})
+					</script>
+
+					<?php } ?>
+
+					<!--////////////////////////
+					////	In body html	////
+					/////////////////////////-->
+
 					<h1 class="text-center mt-4">SCALE Frequently Asked Questions</h2>
 
-					
-					<div data-bs-spy="scroll" data-bs-target="#questionSectionNavbar" data-bs-root-margin="0px 0px -40%" class="scrollspy-example bg-body-tertiary p-3 rounded-2" tabindex="0">
+					<!--Add new FAQ button and success message-->
+					<div class=" text-center mt-4">
+						<?php if($isCoordinator) { ?>
+							<button type='button' class='btn btn-outline-dark' data-bs-toggle='modal' data-bs-target='#addModal'>
+								Add Frequently Asked Question
+							</button>
+						<?php
+							if (isset($_SESSION["success"])) {
+								echo "<p style='color: green;'>".$_SESSION["success"]."</p>";
+								unset($_SESSION["success"]);
+							}
+						} ?>
+					</div>
+
+					<!-- Loop that displays all questions -->
 					<?php
 
 						$previouscategory = NULL;
-
 						foreach($questions as $question) {
-
 							$qid = $question['scalefaqid'];
 							$qquestion = $question['question'];
 							$qcategory = $question['category'];
 							$qanswer = $question['answer'];
 
+							// Checks that a previous category existed to prevent closing a div that doesn't exist.
 							if ($qcategory != $previouscategory) {
-								// Checks that a previous category existed to prevent closing a div that doesn't exist.
 								if ($previouscategory) {
-									if ($previouscategory) echo '</div>';
+									echo '</div>';
 								}
 								
 								echo '<div class="accordion accordion-flush container-fluid mb-3" id="'.$qcategory.'Section">';
@@ -158,26 +539,36 @@
 								$previouscategory = $qcategory;
 							}
 					?>
-						<div class="accordion-item ms-4">
-							<h2 class="accordion-header" id="<?php echo 'question'.$qid ?>">
-								<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#<?php echo 'answer'.$qid ?>" aria-expanded="true" aria-controls="<?php echo 'answer'.$qid ?>">
-									<?php echo $qquestion?>
-								</button>
-							</h2>
-							<div id="<?php echo 'answer'.$qid ?>" class="accordion-collapse collapse" aria-labelledby="<?php echo 'question'.$qid ?>">
-								<div class="accordion-body">
-									<?php echo $qanswer?>
+							<div class="accordion-item ms-4">
+								<h2 class="accordion-header" id="<?= 'question'.$qid ?>">
+									<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#<?= 'answer'.$qid ?>" aria-expanded="true" aria-controls="<?= 'answer'.$qid ?>">
+										<?= $qquestion?>
+									</button>
+								</h2>
+								<div id="<?= 'answer'.$qid ?>" class="accordion-collapse collapse" aria-labelledby="<?= 'question'.$qid ?>">
+									<div class="accordion-body">
+										<?php echo $qanswer ?>
+										<div class="mt-2">
+											<input type="hidden" name="question" id="faq<?= $qid ?>Question" value="<?= $qquestion ?>"/>
+											<input type="hidden" name="category" id="faq<?= $qid ?>Category" value="<?= $qcategory ?>"/>
+											<input type="hidden" name="answer" id="faq<?= $qid ?>Answer" value="<?= $qanswer ?>"/>
+
+											<?php if($isCoordinator) { ?>
+												<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#editModal" data-bs-qid="<?= $qid ?>">
+													Edit
+												</button>
+												<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#deleteModal" data-bs-qid="<?= $qid ?>">
+													Delete
+												</button>
+											<?php } ?>
+										</div>
+									</div>
 								</div>
 							</div>
-						</div>
-					<?php
-						}
-						
+					<?php }
 						// At the end of the while loop, the last category will still be unclosed. This if statements checks if questions even loaded then closes the category if it did exist.
 						if ($previouscategory) echo '</div>';
 					?>
-					</div>
-					
 				</main>
 				<footer class="py-4 bg-light mt-auto">
 					<div class="container-fluid px-4">

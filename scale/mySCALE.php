@@ -1,3 +1,34 @@
+<?php
+	require_once "..\pdo.php";
+
+	$userid = 3;
+
+	$sql = "SELECT
+				`users`.`userid` AS 'userid',
+				`persons`.`personid`AS 'personid',
+				`students`.`studentid` AS 'studentid'
+			FROM `users`
+			JOIN `persons` ON `persons`.`userid` = `users`.`userid`
+			LEFT JOIN `students` ON `students`.`personid` = `persons`.`personid`
+			WHERE `users`.`userid` = $userid;";
+
+	$query = $pdo->query($sql);
+	$persondata = get_object_vars($query->fetch(PDO::FETCH_OBJ));
+
+	$personid = $persondata["personid"];
+	$studentid = $persondata["studentid"] ? $persondata["studentid"] : 0;
+
+	$query->closeCursor();
+
+	$activities;
+
+	if($studentid != 0) {
+		$activities = getSQLData("Call Get_Student_Activities($studentid)");
+	}
+	else {
+		$activities = getSQLData("Call Get_Supervisor_Activities($personid)");
+	}
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -11,6 +42,7 @@
 		<title>Dashboard - reckrds</title>
 		<link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
 		<link href="/scaleSite/css/styles.css" rel="stylesheet" />
+		<link href="/scaleSite/css/scaleStyle.css" rel="stylesheet"/>
 		<script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
 	</head>
 	<body class="sb-nav-fixed">
@@ -82,21 +114,215 @@
 			</div>
 			<div id="layoutSidenav_content">
 				<main>
-                    <!--
+					<div class="container-fluid px-4">
+						<h1 class="mt-4">My SCALE</h1>
 
-					#####################################
-					#	We code in this block - Adam	#
-					#####################################
+						<ol class="breadcrumb mb-4">
+							<li class="breadcrumb-item active">Add Activity</li>
+						</ol>
 
-					-->
+						<div class="container-fluid mb-2">
+							<a class="btn btn-primary" href="newActivity.php" role="button">Create Activity</a>
+							<span class="mx-3">or</span>
+							<a class="btn btn-primary" href="joinActivity.php" role="button">View Available Activities</a>
+							<span class="mx-3">or</span>
+							<span class="input-group d-inline-flex" style="width: 250px">
+								<input type="text" class="form-control" placeholder="Activity Code"/>
+								<button type="button" class="btn btn-primary" data-mdb-ripple-init>Apply</button>
+							</span>
+						</div>
 
-					<p>We'll be making four screens for each of the stakeholders. You can redirect to each site here</p>
-                    <div class="list-group">
-                        <a href="/scaleSite/scale/mySCALE_AdultSupervisors.php" class="list-group-item list-group-item-action">Adult Supervisors</a>
-                        <a href="/scaleSite/scale/mySCALE_Students.php" class="list-group-item list-group-item-action">Students</a>
-                        <a href="#" class="list-group-item list-group-item-action">SCALE Coordinators</a>
-                        <a href="/scaleSite/scale/mySCALE_Advisers.php" class="list-group-item list-group-item-action">SCALE Advisors</a>
-                    </div>
+						<?php
+						$statuscategories = [
+							"P" => "Proposed Activities",
+							"IP-I" => "In Progress (Implementation) Activities",
+							"IP-P" => "In Progress (Preperation) Activities",
+							"C" => "Completed Activities"
+						];
+						$previouscategory = NULL;
+						
+						function convertDate($dateString, $activity) {
+							$preconvert = DateTime::createFromFormat('Y-m-d', $activity[$dateString]);
+							return $preconvert->format('F d, Y');
+						}
+
+						foreach($activities as $activity) {
+							$activityid = $activity["activityid"];
+
+							if ($activity["activitystatus"] != $previouscategory) {
+						?>
+								<ol class="breadcrumb mb-4">
+									<li class="breadcrumb-item active"><?=$statuscategories[$activity["activitystatus"]]?></li>
+								</ol>	
+							<?php
+								$previouscategory = $activity["activitystatus"];
+							}?>
+
+							<div class="card mb-4" id="<?= $activity["activityname"]."Card" ?>">
+								<div class="accordion accordion-flush">
+									<button class="p-3 accordion-button collapsed" style="background-color: transparent;" type="button" data-bs-toggle="collapse" data-bs-target="#activityBody<?= $activityid ?>" aria-expanded="true" aria-controls="activityBody<?= $activityid ?>">
+										<div id="activityHead<?= $activityid ?>">
+											<div class="mb-1">
+												<h5 class="card-title align-middle"><?= $activity["activityname"] ?></h5>
+											</div>
+											<div class="mb-3">
+												<?php
+													$activitystrands = getSQLData("Call get_activity_strands($activityid, $studentid)");
+
+													foreach($activitystrands as $strand) {
+														echo "<span class='badge activityStrandBadge'>".$strand["scalereqshortname"]."</span>";
+													}
+												?>
+											</div>
+										</div>
+									</button>
+									<div id="activityBody<?= $activityid ?>" class="accordion-collapse collapse accordion-body activityInfoContainer" aria-labelledby="activityHead<?= $activityid ?>">
+										<div class="row mb-3 activityInformation">
+											<div class="col col-12 col-md-6">
+												<div class="mb-2">
+													<b>Learning Outcomes: </b>
+													<div class="scaleActivityLOs">
+														<?php
+														$activitylos = getSQLData("Call get_activity_los($activityid, $studentid)");
+
+														foreach($activitylos as $lo) {
+															echo "<span class='badge activityLOBadge scale".$lo["scalereqshortname"]."'>".substr($lo["scalereqshortname"], 2)."</span>";
+														}
+														?>
+													</div>
+												</div>
+												<div class="mb-2">
+													<b>Planning: </b> <?= convertDate("prepstartdate", $activity)." - ".convertDate("prependdate", $activity); ?>
+												</div>
+												<div class="mb-2">
+													<b>Implementation: </b> <?= convertDate("implementstartdate", $activity)." - ".convertDate("implementenddate", $activity); ?>
+												</div>
+												<div class="mb-2">
+													<b>Venue: </b> <?= $activity["activityvenue"] ?>
+												</div>
+												<div class="mb-2">
+													<b>Adult Supervisors: </b>
+													<table class="table table-bordered table-sm">
+														<thead class="thead-light">
+															<tr>
+																<th scope="col">Name</th>
+																<th scope="col">Position</th>
+																<th scope="col">Company / Organization / Affiliation</th>
+																<th scope="col">Contact Number and Email</th>
+															</tr>
+														</thead>
+														<tbody>
+															<?php
+															$sql = "SELECT `supervisorid`, `adultsupervisors`.`personid`, `activityid`, `position`, `isactive`, `persons`.`fullname` AS 'fullname' FROM `adultsupervisors`
+																	JOIN `persons` ON `adultsupervisors`.`personid` = `persons`.`personid`
+																	WHERE `activityid` = $activityid AND `adultsupervisors`.`isactive`;";
+															$supervisors = $pdo->query($sql);
+
+															while ($supervisor = $supervisors->fetch(PDO::FETCH_ASSOC)) {
+															?>
+															<tr>
+																<td><?= $supervisor["fullname"] ?></td>
+																<td><?= $supervisor["position"] ?></td>
+																<td>To be provided in sir edge's schema</td>
+																<td>
+																	To be provided in sir edge's schema
+																</td>
+															</tr>
+															<?php
+															}
+															?>
+														</tbody>
+													</table>
+												</div>
+												<div class="mb-2">
+													<b>Potential Risks: </b>
+													<table class="table table-bordered table-sm">
+														<thead class="thead-light">
+															<tr>
+																<th scope="col">Risks Identified</th>
+																<th scope="col">Safety Precautions</th>
+															</tr>
+														</thead>
+														<tbody>
+															<?php
+															$sql = "SELECT * FROM `risks`
+																	WHERE `risks`.`activityid` = $activityid
+																		AND `risks`.`isactive`";
+															$risks = $pdo->query($sql);
+															
+															while ($risk = $risks->fetch(PDO::FETCH_ASSOC)) {
+															?>
+															<tr>
+																<td><?= $risk["risk"] ?></td>
+																<td><?= $risk["precaution"] ?></td>
+															</tr>
+															<?php } ?>
+														</tbody>
+													</table>
+												</div>
+											</div>
+											<div class="col col-12 col-md-6">
+												<div class="mb-2 container container-fluid activityInfoSection">
+													<h5>Activity Description</h5>
+													<p><?= $activity["activitydescription"] ?></p>
+												</div>
+												<div class="mb-2 container container-fluid activityInfoSection">
+													<h5>Objectives</h5>
+													<p><?= $activity["activitydescription"] ?></p>
+												</div>
+												<div class="mb-2">
+													<b>Materials Needed: </b>
+													<table class="table table-bordered table-sm">
+														<thead class="thead-light">
+															<tr>
+																<th scope="col">Qty</th>
+																<th scope="col">Items</th>
+																<th scope="col">Unit Cost (PHP)</th>
+																<th scope="col">Amount (PHP)</th>
+															</tr>
+														</thead>
+														<tbody>
+															<?php
+															$sql = "SELECT * FROM `materials`
+																	WHERE `materials`.`activityid` = $activityid
+																		AND `materials`.`isactive`";
+															$materials = $pdo->query($sql);
+															
+															$totalcost = 0;
+															while ($material = $materials->fetch(PDO::FETCH_ASSOC)) {
+																$amount = number_format((float)($material["quantity"] * $material["cost"]), 2, '.', '');
+																$totalcost += $amount;
+															?>
+																<tr>
+																	<td class="text-end"><?= $material["quantity"] ?></td>
+																	<td class="text-start"><?= $material["name"] ?></td>
+																	<td class="text-end"><?= $material["cost"] ?></td>
+																	<td class="text-end"><?= $amount ?></td>
+																</tr>
+															<?php } ?>
+															<tr>
+																<td colspan="3">Total</td>
+																<td class="text-end"> <?= number_format((float)$totalcost, 2, '.', '') ?></td>
+															</tr>
+														</tbody>
+													</table>
+												</div>
+											
+											</div>
+										</div>
+										<div class="row activityActions">
+											<a class="btn btn-outline-dark" href="#" role="button">Edit Activity Information</a>
+											<a class="btn btn-outline-dark" href="managePeople.php?activityId=<?= $activityid ?>" role="button">Manage People</a>
+											<a class="btn btn-outline-dark" href="manageMaterialsRisks.php?activityId=<?= $activityid ?>" role="button">Manage Materials and Risks</a>
+											<a class="btn btn-outline-dark" href="#" role="button">Submit File</a>
+											<a class="btn btn-outline-dark" href="#" role="button">Print Form 3 Information</a>
+										</div>
+									</div>
+								</div>
+							</div>
+
+						<?php }?>
+					</div>
 				</main>
 				<footer class="py-4 bg-light mt-auto">
 					<div class="container-fluid px-4">
