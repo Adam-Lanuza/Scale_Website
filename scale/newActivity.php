@@ -3,8 +3,6 @@
 
 	$userid = 3;
 
-	session_start();
-
 	$reqFields = [
 		"title",
 		"activitycode",
@@ -19,26 +17,19 @@
 		"publicity"
 	];
 
-	function clearSessionValues($fields) {
-		array_push($fields, "cancel", "add");
-		foreach ($fields as $field) {
-			if (isset($_SESSION[$field])) {
-				unset($_SESSION[$field]);
-			}
-		}
-	}
+	session_start();
 
 	// Searches if the person that made the activity is a student, employee, or has data in both
 	$sql = "SELECT
-				`users`.`userid` AS 'userid',
-				`persons`.`personid`AS 'personid',
-				`students`.`studentid` AS 'studentid',
-				`employees`.`employeeid` AS 'employeeid'
-			FROM `users`
-			JOIN `persons` ON `persons`.`userid` = `users`.`userid`
-			LEFT JOIN `students` ON `students`.`personid` = `persons`.`personid`
-			LEFT JOIN `employees` ON `employees`.`userid` = `users`.`userid`
-			WHERE `users`.`userid` = $userid;";
+		`users`.`userid` AS 'userid',
+		`persons`.`personid`AS 'personid',
+		`students`.`studentid` AS 'studentid',
+		`employees`.`employeeid` AS 'employeeid'
+	FROM `users`
+	JOIN `persons` ON `persons`.`userid` = `users`.`userid`
+	LEFT JOIN `students` ON `students`.`personid` = `persons`.`personid`
+	LEFT JOIN `employees` ON `employees`.`userid` = `users`.`userid`
+	WHERE `users`.`userid` = $userid;";
 
 	$query = $pdo->query($sql);
 	$persondata = get_object_vars($query->fetch(PDO::FETCH_OBJ));
@@ -48,6 +39,15 @@
 	$employeeid = $persondata["employeeid"];
 
 	$query->closeCursor();
+
+	function clearSessionValues($fields) {
+		array_push($fields, "cancel", "add");
+		foreach ($fields as $field) {
+			if (isset($_SESSION[$field])) {
+				unset($_SESSION[$field]);
+			}
+		}
+	}
 
 	// Clears all session data on [ Cancel ] press
 	if (isset($_POST["cancel"])) {
@@ -99,7 +99,7 @@
 			$stmt->execute(array(
 				':sid' => $studentid,
 				':aid' => $_SESSION["activityid"],
-				':p' => "Participant",
+				':p' => "Organizer",
 				':s' => "P",
 				':ib' => $userid
 			));
