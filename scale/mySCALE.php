@@ -1,32 +1,16 @@
 <?php
 	require_once "..\pdo.php";
-
-	$userid = 3;
-
-	$sql = "SELECT
-				`users`.`userid` AS 'userid',
-				`persons`.`personid`AS 'personid',
-				`students`.`studentid` AS 'studentid'
-			FROM `users`
-			JOIN `persons` ON `persons`.`userid` = `users`.`userid`
-			LEFT JOIN `students` ON `students`.`personid` = `persons`.`personid`
-			WHERE `users`.`userid` = $userid;";
-
-	$query = $pdo->query($sql);
-	$persondata = get_object_vars($query->fetch(PDO::FETCH_OBJ));
-
-	$personid = $persondata["personid"];
-	$studentid = $persondata["studentid"] ? $persondata["studentid"] : 0;
-
-	$query->closeCursor();
-
+	
 	$activities;
 
-	if($studentid != 0) {
-		$activities = getSQLData("Call Get_Student_Activities($studentid)");
+	if($userData["employeeid"]) {
+		$activities = getSQLData("Call Get_Supervisor_Activities({$userData['personid']})");
+	}
+	elseif ($userData["studentid"] && $userData["studentid"] != 0) {
+		$activities = getSQLData("Call Get_Student_Activities({$userData['studentid']})");
 	}
 	else {
-		$activities = getSQLData("Call Get_Supervisor_Activities($personid)");
+		$activities = getSQLData("Call Get_Supervisor_Activities({$userData['personid']})");
 	}
 ?>
 
@@ -117,6 +101,13 @@
 					<div class="container-fluid px-4">
 						<h1 class="mt-4">My SCALE</h1>
 
+                        <?php
+						if (isset($_SESSION["success"])) {
+							echo "<p class='text-success'>".$_SESSION["success"]."</p>";
+							unset($_SESSION["success"]);
+						}
+                        ?>
+
 						<ol class="breadcrumb mb-4">
 							<li class="breadcrumb-item active">Add Activity</li>
 						</ol>
@@ -124,12 +115,22 @@
 						<div class="container-fluid mb-2">
 							<a class="btn btn-primary" href="newActivity.php" role="button">Create Activity</a>
 							<span class="mx-3">or</span>
-							<a class="btn btn-primary" href="joinActivity.php" role="button">View Available Activities</a>
+							<a class="btn btn-primary" href="availableActivities.php" role="button">View Available Activities</a>
+
+                            <!--
+
+                            Form input that ideally allows people to join an activity using a unique code that can be given out.
+                            Dropped because it would require
+                                1. A unique code generator
+                                2. A join modal in mySCALE.php
+                                3. Joining functionality
+
 							<span class="mx-3">or</span>
 							<span class="input-group d-inline-flex" style="width: 250px">
 								<input type="text" class="form-control" placeholder="Activity Code"/>
 								<button type="button" class="btn btn-primary" data-mdb-ripple-init>Apply</button>
 							</span>
+                            -->
 						</div>
 
 						<?php
@@ -160,17 +161,17 @@
 
 							<div class="card mb-4" id="<?= $activity["activityname"]."Card" ?>">
 								<div class="accordion accordion-flush">
-									<button class="p-3 accordion-button collapsed" style="background-color: transparent;" type="button" data-bs-toggle="collapse" data-bs-target="#activityBody<?= $activityid ?>" aria-expanded="true" aria-controls="activityBody<?= $activityid ?>">
+									<button class="p-3 accordion-button collapsed bg-transparent" type="button" data-bs-toggle="collapse" data-bs-target="#activityBody<?= $activityid ?>" aria-expanded="true" aria-controls="activityBody<?= $activityid ?>">
 										<div id="activityHead<?= $activityid ?>">
 											<div class="mb-1">
 												<h5 class="card-title align-middle"><?= $activity["activityname"] ?></h5>
 											</div>
 											<div class="mb-3">
 												<?php
-													$activitystrands = getSQLData("Call get_activity_strands($activityid, $studentid)");
+													$activitystrands = getSQLData("Call get_activity_strands($activityid, {$userData['studentid']})");
 
 													foreach($activitystrands as $strand) {
-														echo "<span class='badge activityStrandBadge'>".$strand["scalereqshortname"]."</span>";
+														echo "<span class='badge activityStrandBadge' data-bs-toggle='tooltip' title='{$strand["scalereqdescription"]}'>".$strand["scalereqshortname"]."</span>";
 													}
 												?>
 											</div>
@@ -183,10 +184,10 @@
 													<b>Learning Outcomes: </b>
 													<div class="scaleActivityLOs">
 														<?php
-														$activitylos = getSQLData("Call get_activity_los($activityid, $studentid)");
+														$activitylos = getSQLData("Call get_activity_los($activityid, {$userData['studentid']})");
 
 														foreach($activitylos as $lo) {
-															echo "<span class='badge activityLOBadge scale".$lo["scalereqshortname"]."'>".substr($lo["scalereqshortname"], 2)."</span>";
+															echo "<span class='badge activityLOBadge scale{$lo['scalereqshortname']}' data-bs-toggle='tooltip' title='{$lo["scalereqdescription"]}'>".substr($lo["scalereqshortname"], 2)."</span>";
 														}
 														?>
 													</div>
@@ -268,7 +269,7 @@
 												</div>
 												<div class="mb-2 container container-fluid activityInfoSection">
 													<h5>Objectives</h5>
-													<p><?= $activity["activitydescription"] ?></p>
+													<p><?= $activity["activityobjectives"] ?></p>
 												</div>
 												<div class="mb-2">
 													<b>Materials Needed: </b>
@@ -311,17 +312,17 @@
 											</div>
 										</div>
 										<div class="row activityActions">
-											<a class="btn btn-outline-dark" href="#" role="button">Edit Activity Information</a>
+											<a class="btn btn-outline-dark" href="editActivity.php?activityId=<?= $activityid ?>" role="button">Edit Activity Information</a>
 											<a class="btn btn-outline-dark" href="managePeople.php?activityId=<?= $activityid ?>" role="button">Manage People</a>
-											<a class="btn btn-outline-dark" href="manageMaterialsRisks.php?activityId=<?= $activityid ?>" role="button">Manage Materials and Risks</a>
-											<a class="btn btn-outline-dark" href="#" role="button">Submit File</a>
+											<a class="btn btn-outline-dark" href="manageMaterialsRisks.php?activityId=<?= $activityid ?>" role="button">Manage Materials and Risks</a>	
 											<a class="btn btn-outline-dark" href="#" role="button">Print Form 3 Information</a>
+											<a class="btn btn-outline-dark" href="leaveActivity.php?activityId=<?= $activityid ?>" role="button">Leave Activity</a>
 										</div>
 									</div>
 								</div>
 							</div>
 
-						<?php }?>
+						<?php } ?>
 					</div>
 				</main>
 				<footer class="py-4 bg-light mt-auto">

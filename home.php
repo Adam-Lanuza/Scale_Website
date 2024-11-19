@@ -1,10 +1,18 @@
 <!DOCTYPE html>
 <?php
 	require_once "pdo.php";
-
-	$currentstudent = 1;
 	
-	$activities = getSQLData("get_student_activities($currentstudent)");
+	if($userData["employeeid"]) {
+		$activities = getSQLData("Call Get_Supervisor_Activities({$userData['personid']})");
+		$userData["studentid"] = 0;
+	}
+	elseif ($userData["studentid"]) {
+		$activities = getSQLData("Call Get_Student_Activities({$userData['studentid']})");
+	}
+	else {
+		$activities = getSQLData("Call Get_Supervisor_Activities({$userData['personid']})");
+		$userData["studentid"] = 0;
+	}
 ?>
 
 <html lang="en">
@@ -126,7 +134,7 @@
 										<div class="card-body">
 											<div class="mb-1">
 												<?php
-													$activitystrands = getSQLData("get_activity_strands($activityid, $currentstudent)");
+													$activitystrands = getSQLData("Call get_activity_strands($activityid, {$userData['studentid']})");
 
 													foreach($activitystrands as $strand) {
 														echo "<span class='badge activityStrandBadge'>".$strand["scalereqshortname"]."</span>";
@@ -135,7 +143,7 @@
 											</div>
 											<div class="mb-2">
 												<?php
-												$activitylos = getSQLData("get_activity_los($activityid, $currentstudent)");
+												$activitylos = getSQLData("Call get_activity_los($activityid, {$userData['studentid']})");
 
 												foreach($activitylos as $lo) {
 													echo "<span class='badge activityLOBadge scale".$lo["scalereqshortname"]."' style='height: 20px; width: 20px;'>".substr($lo["scalereqshortname"], 2)."</span>";
@@ -156,7 +164,7 @@
 													<span class="activityNotificationDot">New alerts</span>
 												</span>
 											</div>
-											<a href="scale/mySCALE_Students.php#<?= $activity["activityname"] ?>Card" type="button" class="btn btn-primary scaleActivityMore">View More</a>
+											<a href="scale/mySCALE.php#<?= $activity["activityname"] ?>Card" type="button" class="btn btn-primary scaleActivityMore">View More</a>
 										</div>
 									</div>
 								</div>

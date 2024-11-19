@@ -1,3 +1,6 @@
+<?php
+	require_once "..\pdo.php";
+?>
 
 <!DOCTYPE html>
 <html lang="en">
@@ -12,7 +15,7 @@
 		<link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
 		<link href="/scaleSite/css/styles.css" rel="stylesheet" />
 		<link href="/scaleSite/css/scaleStyle.css" rel="stylesheet"/>
-		<link href="/scaleSite/css/activityStudentsStyle.css" rel="stylesheet" />
+		<link href="/scaleSite/css/myAdviseesStyle.css" rel="stylesheet"/>
 		<script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
 	</head>
 	<body class="sb-nav-fixed">
@@ -85,20 +88,76 @@
 			<div id="layoutSidenav_content">
 				<main>
 					<div class="container-fluid px-4">
-						<h1 class="mt-4">Activity Name</h1>
-
-						<span class="input-group mb-2" id="activityCodeForm">
-							<input type="text" class="form-control" placeholder="Search Student"/>
-							<button type="button" class="btn btn-primary" data-mdb-ripple-init><i class="fas fa-search"></i></button>
-						</span>
+						<h1 class="mt-4">My Advisees</h1>
 
 						<ol class="breadcrumb mb-4">
-							<li class="breadcrumb-item active">Active Students</li>
+							<li class="breadcrumb-item active">Summary Statistics</li>
+						</ol>
+
+						<!-- Summary Statistics Card -->
+						<div class="card mb-5 w-75 mx-auto">
+							<div class="card-body">
+								<h4 class="card-title text-center mb-4">Advisee SCALE Completion Status</h4>
+
+								<div class="progress border border-dark" style="height: 20px;">
+									<div class="progress-bar" role="progressbar" style="width: 20%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+								</div>
+								<p class="card-text text-center fs-6 fw-bold mb-4">3/15 Students Complete</p>
+
+								<div class="progress border border-dark mb-2" style="height: 20px;">
+									<div class="progress-bar delayed" role="progressbar" style="width: 46.67%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+									<div class="progress-bar onSchedule" role="progressbar" style="width: 33.33%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+									<div class="progress-bar aheadOfTime" role="progressbar" style="width: 20%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+								</div>
+								<div class="card-text d-flex justify-content-evenly fs-6 fw-bold mb-4">
+									<div class="d-flex align-items-center"><span class="legendBox delayed"></span>Delayed: 7/15</div>
+									<div class="d-flex align-items-center"><span class="legendBox onSchedule"></span>On Schedule: 5/15</div>
+									<div class="d-flex align-items-center"><span class="legendBox aheadOfTime"></span>Ahead of Time: 3/15</div>
+								</div>
+								
+								<div class="row row-cols-4">
+									<div class="d-flex flex-column align-items-center">
+										<h5>S</h5>
+										<div class="progress border border-dark mb-2 w-75" style="height: 45px;">
+											<div class="progress-bar bg-success" role="progressbar" style="width: 100%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">100%</div>
+										</div>
+										<p>15/15 Complete</p>
+									</div>
+
+									<div class="d-flex flex-column align-items-center">
+										<h5>C</h5>
+										<div class="progress border border-dark mb-2 w-75" style="height: 45px;">
+											<div class="progress-bar" role="progressbar" style="width: 53.33%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">53.33%</div>
+										</div>
+										<p>8/15 Complete</p>
+									</div>
+
+									<div class="d-flex flex-column align-items-center">
+										<h5>A</h5>
+										<div class="progress border border-dark mb-2 w-75" style="height: 45px;">
+											<div class="progress-bar" role="progressbar" style="width: 26.67%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">26.67%</div>
+										</div>
+										<p>4/15 Complete</p>
+									</div>
+									
+									<div class="d-flex flex-column align-items-center">
+										<h5>L</h5>
+										<div class="progress border border-dark mb-2 w-75" style="height: 45px;">
+											<div class="progress-bar" role="progressbar" style="width: 80%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100">80%</div>
+										</div>
+										<p>12/15 Complete</p>
+									</div>
+								</div>
+							</div>
+						</div>
+
+						<ol class="breadcrumb mb-4">
+							<li class="breadcrumb-item active">Advisee Details</li>
 						</ol>
 						
 						<div class="accordion accordion-flush" id="accordionExample">
 							<div class="accordion-item">
-								<div class="accordion-header collapsed bg-transparent">
+								<div class="accordion-header collapsed bg-transparent d-flex position-relative mb-3">
 									<img src="https://i1.sndcdn.com/artworks-000140019692-3ogprd-t500x500.jpg">
 									<div class="studentHeaderInformation">
 										<h5>Chungus, Ben Ivan G.</h5>
@@ -109,9 +168,11 @@
 											<span class="badge activityStrandBadge">L</span>
 										</span>
 									</div>
-									<button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-										View Details
-									</button>
+									<div class="position-absolute top-50 end-0 translate-middle-y">
+										<button class="btn btn-secondary my-auto" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+											View Details
+										</button>
+									</div>
 								</div>
 								
 								<div id="collapseOne" class="collapse row" aria-labelledby="headingOne" data-parent="#accordionExample">
@@ -147,19 +208,6 @@
 											</ul>
 											<div>
 												<button class="btn btn-outline-dark mx-3 mb-3" type="button">Edit Strands and LOs</button>
-												<button class="btn btn-outline-dark mx-3 mb-3" type="button">Edit Permissions</button>
-											</div>
-											<div class="container notificationsBox">
-												<div class="row notification">
-													<div class="col-auto">(mm-dd-yyyy) Documentation: <span>Approved</span></div>
-													<div class="col"><hr></div>
-													<div class="col-auto"><a href="#">View Submission</a></div>
-												</div>
-												<div class="row notification">
-													<div class="col-auto">(03-14-2024) Activity Information Edited: <span>Waiting for Approval</span></div>
-													<div class="col"><hr></div>
-													<div class="col-auto"><a href="#">View Submission</a></div>
-												</div>
 											</div>
 											<hr>
 										</div>
@@ -168,7 +216,6 @@
 								<hr class="endingLine">
 							</div>
 						</div>
-						
 					</div>
 				</main>
 				<footer class="py-4 bg-light mt-auto">

@@ -1,7 +1,5 @@
 <?php
 	require_once "..\pdo.php";
-	
-	$currentUser = 2;
 
 	session_start();
 
@@ -17,7 +15,7 @@
 	// Clears all session data on [ Cancel ] press
 	if (isset($_POST["cancel"])) {
 		clearSessionValues(["scalefaqid", "question", "category", "newCategory", "finalCategory", "answer"]);
-		header("Location: scaleFAQ_Coordinators.php");
+		header("Location: scaleFAQ.php");
 	}
 
 	//////////////////////
@@ -40,19 +38,8 @@
 	// Selecting all questions
 	$questions = getSQLData("Call Get_All_Questions()");
 	
-	// Checking if the user is a coordinator
-	$sql = "SELECT
-				`coordinators`.`coordinatorid`,
-				`employees`.`employeeid`,
-				`users`.`userid`,
-				`acadyear`
-			FROM `coordinators`
-			JOIN `employees` ON `employees`.`employeeid` = `coordinators`.`employeeid`
-			JOIN `users` ON `users`.`userid` = `employees`.`userid`
-			WHERE `users`.`userid` = $currentUser
-				AND `coordinators`.`isactive`;";
-	
-	$isCoordinator = !empty(getSQLData($sql));
+	// Checking if the user is a coordinator	
+	$isCoordinator = !empty($userData["coordinatorid"]);
 
 	//////////////////////
 	//		Edit		//
@@ -70,7 +57,7 @@
 
 		$_SESSION["success"] = "FAQ Updated Successfully";
 		clearSessionValues(["scalefaqid", "question", "category", "newCategory", "finalCategory", "answer"]);
-		header("Location: scaleFAQ_Coordinators.php");
+		header("Location: scaleFAQ.php");
 		return;
 	}
 
@@ -90,7 +77,7 @@
 			$_SESSION["finalCategory"] = $_POST["category"];
 			
 		}
-		header("Location: scaleFAQ_Coordinators.php");
+		header("Location: scaleFAQ.php");
 		return;
 	}
 
@@ -105,7 +92,7 @@
 
 		$_SESSION['success'] = "Question ".$_SESSION["scalefaqid"]." Succesfully Deleted";
 		clearSessionValues(["scalefaqid"]);
-		header("Location: scaleFAQ_Coordinators.php");
+		header("Location: scaleFAQ.php");
 		return;
 	}
 
@@ -113,7 +100,7 @@
 	if (isset($_POST["delete"]) && isset($_POST["scalefaqid"])) {
 		$_SESSION["delete"] = $_POST["delete"];
 		$_SESSION["scalefaqid"] = $_POST["scalefaqid"];
-		header("Location: scaleFAQ_Coordinators.php");
+		header("Location: scaleFAQ.php");
 		return;
 	}
 
@@ -121,18 +108,18 @@
 	//		Add			//
 	//////////////////////
 
-	if (!empty($_SESSION["question"]) && !empty($_SESSION["finalCategory"]) && !empty($_SESSION["answer"]) && !empty($currentUser)) {
+	if (!empty($_SESSION["question"]) && !empty($_SESSION["finalCategory"]) && !empty($_SESSION["answer"]) && !empty($userid)) {
 		$stmt = $pdo->prepare("CALL Add_Question(:q, :c, :a, :i)");
 		$stmt->execute(array(
 			":q" => $_SESSION["question"],
 			':c' => $_SESSION["finalCategory"],
 			':a' => $_SESSION["answer"],
-			':i' => $currentUser
+			':i' => $userid
 		));
 
 		$_SESSION["success"] = "FAQ Successfully Added";
 		clearSessionValues(["question", "category", "answer"]);
-		header("Location: scaleFAQ_Coordinators.php");
+		header("Location: scaleFAQ.php");
 		return;
 	}
 
@@ -149,7 +136,7 @@
 		else {
 			$_SESSION["finalCategory"] = $_POST["category"];
 		}
-		header("Location: scaleFAQ_Coordinators.php");
+		header("Location: scaleFAQ.php");
 		return;
 	}	
 ?>
@@ -425,77 +412,6 @@
 						</div>
 					</div>
 
-					<!-- Modal Scripts -->
-					<script>
-						function checkFilledValues(modalID) {
-							var modal = document.getElementById(modalID);
-
-							// Gets the different Input boxes
-
-							var scalefaqidInput = modal.querySelector(".scalefaqidInput");
-							var questionInput = modal.querySelector(".questionInput");
-							var categoryInput = modal.querySelector(".categoryInput");
-							var newCategoryInput = modal.querySelector(".newCategoryInput");
-							var answerInput = modal.querySelector(".answerInput");
-
-							// Current State of all the Input Boxes
-							console.log((scalefaqidInput.value));
-							console.log((questionInput.value))
-							console.log((newCategoryInput.value) || (newCategoryInput.disabled))
-							console.log((answerInput.value))
-
-							// Checks that all the input boxes have content
-							// Category should either be disabled (selecting a previous category) or filled (making a new category)
-							if ((scalefaqidInput.value) && (questionInput.value) && ((newCategoryInput.value) || (newCategoryInput.disabled)) && (answerInput.value)) {
-								console.log("pass")
-								return true;
-							}
-							else {
-								console.log("fail")
-								var errorBox = modal.querySelector(".errorBox");
-								errorBox.textContent = "Error: Please ensure that all fields are filled";
-								return false;
-							}
-						}
-						function insertData (ev, modal) {
-							// Button that triggered the modal
-							var button = ev.relatedTarget;
-
-							// Gathers the question data from the given scalefaqid
-							var qid = button.getAttribute('data-bs-qid');
-
-							// Gets the value stored in the questionBox, the input location in the modal and equates the two values
-							modal.querySelector(".scalefaqidInput").value = qid;
-							modal.querySelector(".questionInput").value = document.getElementById(`faq${qid}Question`).value;
-							modal.querySelector(".categoryInput").value = document.getElementById(`faq${qid}Category`).value;
-							modal.querySelector(".answerInput").value = document.getElementById(`faq${qid}Answer`).value;
-						}
-						function clearForm (modalID){
-							console.log("clear values")
-
-							var modal = document.getElementById(modalID);
-
-							modal.querySelector(".questionInput").value = "";
-							modal.querySelector(".categoryInput").value = "<?= $questionCategories[0] ?>";
-							modal.querySelector(".newCategoryInput").value = "";
-							modal.querySelector(".newCategoryInput").disabled = true;
-							modal.querySelector(".answerInput").value = "";
-						}
-						function checkOption(obj, modalID) {
-							var input = document.getElementById(modalID).querySelector(".newCategoryInput");
-							if (obj.value != "newCategory") {
-								input.disabled = true;
-								input.value = "";
-							}
-							else {
-								input.disabled = false;
-							}
-						}
-						document.getElementById('editModal').addEventListener('show.bs.modal', function(){insertData(event, this)})
-
-						document.getElementById('deleteModal').addEventListener('show.bs.modal', function(){insertData(event, this)})
-					</script>
-
 					<?php } ?>
 
 					<!--////////////////////////
@@ -512,7 +428,7 @@
 							</button>
 						<?php
 							if (isset($_SESSION["success"])) {
-								echo "<p style='color: green;'>".$_SESSION["success"]."</p>";
+								echo "<p class='text-success''>".$_SESSION["success"]."</p>";
 								unset($_SESSION["success"]);
 							}
 						} ?>
@@ -586,6 +502,7 @@
 		</div>
 		<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.3/dist/js/bootstrap.bundle.min.js" crossorigin="anonymous"></script>
 		<script src="/scaleSite/js/scripts.js"></script>
+		<script src="/scaleSite/js/scaleFAQScripts.js"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/2.8.0/Chart.min.js" crossorigin="anonymous"></script>
 		<script src="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/umd/simple-datatables.min.js" crossorigin="anonymous"></script>
 	</body>
