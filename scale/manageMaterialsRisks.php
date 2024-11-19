@@ -1,8 +1,16 @@
 <?php
 	require_once "..\pdo.php";
-
-	$userid = 4;
 ?>
+
+<!--
+    Only UI implemented since actually coding in functionality is too time consuming
+    Can be implemented in the future if there's leftover time
+
+    Requirements:
+        - Add, Edit, Delete Modals for both materials and risks
+        - Scripts for file confirmation
+        - PHP for adding, editing, and deleting
+-->
 
 <!DOCTYPE html>
 <html lang="en">

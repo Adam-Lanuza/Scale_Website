@@ -1,11 +1,6 @@
 <?php
 	require_once "..\pdo.php";
 
-	$userid = 3;
-
-	$ALL_STRANDS = array("S", "C", "A", "L");
-	$ALL_LOS = array("LO1", "LO2", "LO3", "LO4", "LO5", "LO6", "LO7", "LO8");
-
 	session_start();
 
 	function clearSessionValues($fields) {
@@ -17,25 +12,12 @@
 		}
 	}
 
-	function updateScaleReqs($activitystudentid) {
-		global $ALL_STRANDS, $ALL_LOS, $userid;
-		$allScaleReqs = array_merge($ALL_STRANDS, $ALL_LOS);
-		foreach($allScaleReqs as $scalereq) {
-			if(isset($_SESSION[$scalereq])) {
-				addOrRemoveScaleReq($activitystudentid, $scalereq, "Add", $userid);
-			}
-			else {
-				addOrRemoveScaleReq($activitystudentid, $scalereq, "Remove", $userid);
-			}
-		}
-	}
 	function transferScaleReqInfo() {
-		global $ALL_STRANDS, $ALL_LOS;
-		$allScaleReqs = array_merge($ALL_STRANDS, $ALL_LOS);
+		global $ALL_SCALE_REQS;
 
-		foreach($allScaleReqs as $scalereq) {
-			if(isset($_POST[$scalereq])) {
-				$_SESSION[$scalereq] = $_POST[$scalereq];
+		foreach($ALL_SCALE_REQS as $scaleReq => $scaleReqDesc) {
+			if(isset($_POST[$scaleReq])) {
+				$_SESSION[$scaleReq] = $_POST[$scaleReq];
 			}
 		}
 	}
@@ -76,6 +58,8 @@
 			$_SESSION["error"] = "Adult suprvisor ".$_SESSION["name"]." not found. Please re-input and try again.";
 		}
 
+		transferScaleReqInfo();
+
 		header("Location: managePeople.php?activityId=".$_GET["activityId"]);
 	}
 
@@ -91,13 +75,34 @@
 			':ib' => $userid
 		));
 
-		$sql = "SELECT activitystudentid FROM  activitystudents ORDER BY `activitystudents`.`activitystudentid` DESC LIMIT 1;";
+		$sql = "SELECT activitystudentid FROM  activitystudents
+				WHERE studentid = {$_SESSION["studentid"]}
+					AND activityid = {$_GET["activityId"]}
+				LIMIT 1;";
 		$asid = getSQLData($sql)[0]["activitystudentid"];
 
-		updateScaleReqs($asid);
+		$stmt = $pdo->prepare("CALL `Remove_Student_Scale_Reqs` (:asid, :sreqs)");
+		$stmt->execute(array(
+			':asid' => $asid,
+			':sreqs' => implode(",", array_keys($ALL_SCALE_REQS))
+		));
+		$stmt ->closeCursor();
+		
+		foreach($ALL_SCALE_REQS as $scaleReq => $scaleReqDesc) {
+			if(isset($_SESSION[$scaleReq])) {
+				$stmt = $pdo->prepare("CALL `Add_Student_Scale_Req` (:asid, :sreq, :said, :ib)");
+				$stmt->execute(array(
+					':asid' => $asid,
+					':sreq' => $scaleReq,
+					':said' => 1,
+					':ib' => $userid
+				));
+				$stmt -> closeCursor();
+			}
+		}
 		
 		$_SESSION["success"] = $_SESSION["name"]." Succesfully Added as ".$_SESSION["position"];
-		clearSessionValues(array_merge($ALL_STRANDS, $ALL_LOS,["studentid", "name", "position"]));
+		clearSessionValues(array_merge(array_keys($ALL_SCALE_REQS),["studentid", "name", "position"]));
 
 		header("Location: managePeople.php?activityId=".$_GET["activityId"]);
 		return;
@@ -105,7 +110,7 @@
 	elseif (!empty($_SESSION["system"]) && ($_SESSION["system"] == "Add Student") && !empty($_SESSION["name"])) {
 		$_SESSION["error"] = "Student ".$_SESSION["name"]." not found. Please re-input and try again.";
 
-		clearSessionValues(array_merge($ALL_STRANDS, $ALL_LOS, ["studentid", "name"]));
+		clearSessionValues(array_merge(array_keys($ALL_SCALE_REQS), ["studentid", "name"]));
 
 		header("Location: managePeople.php?activityId=".$_GET["activityId"]);
 		return;
@@ -212,17 +217,35 @@
 
 	// Updates the database after receiving info from POST after the refresh
 	if (!empty($_SESSION["system"]) && ($_SESSION["system"] == "Edit Student") && !empty($_SESSION["activitystudentid"]) && !empty($_SESSION["name"]) && !empty($_SESSION["position"])) {
-		$stmt = $pdo->prepare("CALL `Edit_Student_Position` (:sid, :pos)");
+		$stmt = $pdo->prepare("CALL `Edit_Student_Position` (:asid, :pos)");
 		$stmt->execute(array(
-			':sid' => $_SESSION["activitystudentid"],
+			':asid' => $_SESSION["activitystudentid"],
 			':pos' => $_SESSION["position"]
 		));
 
-		updateScaleReqs($_SESSION["activitystudentid"]);
+		$stmt = $pdo->prepare("CALL `Remove_Student_Scale_Reqs` (:asid, :sreqs)");
+		$stmt->execute(array(
+			':asid' => $_SESSION["activitystudentid"],
+			':sreqs' => implode(",", array_keys($ALL_SCALE_REQS))
+		));
+		$stmt ->closeCursor();
+		
+		foreach($ALL_SCALE_REQS as $scaleReq => $scaleReqDesc) {
+			if(isset($_SESSION[$scaleReq])) {
+				$stmt = $pdo->prepare("CALL `Add_Student_Scale_Req` (:asid, :sreq, :said, :ib)");
+				$stmt->execute(array(
+					':asid' => $_SESSION["activitystudentid"],
+					':sreq' => $scaleReq,
+					':said' => 1,
+					':ib' => $userid
+				));
+				$stmt -> closeCursor();
+			}
+		}
 
 		$_SESSION["success"] = "Student ".$_SESSION["name"]." Updated Succesfully";
 
-		clearSessionValues(array_merge($ALL_STRANDS, $ALL_LOS,["studentid", "name", "position"]));
+		clearSessionValues(array_merge(array_keys($ALL_SCALE_REQS), ["studentid", "name", "position"]));
 		header("Location: managePeople.php?activityId=".$_GET["activityId"]);
 		return;
 	}
@@ -257,10 +280,10 @@
 				FROM `activitystudents`
 				JOIN `students` ON `students`.`studentid` = `activitystudents`.`studentid`
 				JOIN `persons` AS `studentInfo` ON `studentInfo`.`personid` = `students`.`personid`
-				JOIN `scaleadvisors` ON `scaleadvisors`.`studentid` = `students`.`studentid`
-				JOIN `employees` ON `employees`.`employeeid` = `scaleadvisors`.`employeeid`
-				JOIN `users` ON `users`.`userid` = `employees`.`employeeid`
-				JOIN `persons` AS `advisorInfo` ON `advisorInfo`.`userid` = `users`.`userid`
+				LEFT JOIN `scaleadvisors` ON `scaleadvisors`.`studentid` = `students`.`studentid`
+				LEFT JOIN `employees` ON `employees`.`employeeid` = `scaleadvisors`.`employeeid`
+				LEFT JOIN `users` ON `users`.`userid` = `employees`.`employeeid`
+				LEFT JOIN `persons` AS `advisorInfo` ON `advisorInfo`.`userid` = `users`.`userid`
 				WHERE `activityid` = ".$_GET['activityId']."
 					AND `activitystudents`.`isactive`;";
 
@@ -365,7 +388,7 @@
 						<ol class="breadcrumb mb-4">
 							<li class="breadcrumb-item active">Other Persons Involved</li>
 						</ol>
-
+						
 						<?php
 							if (isset($_SESSION["success"])) {
 								echo "<p class='text-success'>".$_SESSION["success"]."</p>";
@@ -574,11 +597,11 @@
 											<div class="row mt-2">
 												<table class="table table-sm table-borderless">
 													<tr>
-														<?php foreach ($ALL_STRANDS as $strand) { ?>
+														<?php foreach ($ALL_STRANDS as $shortname => $desc) { ?>
 															<td>
-																<label class="form-check-label">
-																	<span class='badge activityStrandBadge'><?= $strand ?></span>
-																	<input type="checkbox" class="form-check-input ms-3" name="<?= $strand ?>" value="TRUE">
+																<label class="form-check-label" data-bs-toggle="tooltip" title="<?= $desc ?>">
+																	<span class='badge activityStrandBadge'><?= $shortname ?></span>
+																	<input type="checkbox" class="form-check-input ms-3" name="<?= $shortname ?>" value="TRUE">
 																</label>
 															</td>
 														<?php } ?>
@@ -590,11 +613,11 @@
 											<div class="row mt-2">
 												<table class="table table-sm table-borderless">
 													<tr>
-														<?php foreach ($ALL_LOS as $lo) { ?>
+														<?php foreach ($ALL_LOS as $shortname => $desc) { ?>
 															<td>
-																<label class="form-check-label">
-																	<span class='badge activityStrandBadge'><?= substr($lo, 2) ?></span>
-																	<input type="checkbox" class="form-check-input ms-3" name="<?= $lo ?>" value="TRUE">
+																<label class="form-check-label" data-bs-toggle="tooltip" title="<?= $desc ?>">
+																	<span class='badge activityStrandBadge'><?= substr($shortname, 2) ?></span>
+																	<input type="checkbox" class="form-check-input ms-3" name="<?= $shortname ?>" value="TRUE">
 																</label>
 															</td>
 														<?php } ?>
@@ -644,12 +667,12 @@
 											<div class="row mt-2">
 												<table class="table table-sm table-borderless">
 													<tr>
-														<?php foreach ($ALL_STRANDS as $strand) { ?>
+														<?php foreach ($ALL_STRANDS as $shortname => $desc) { ?>
 															<td>
-																<label class="form-check-label">
-																	<span class='badge activityStrandBadge'><?= $strand ?></span>
-																	<input type="checkbox" class="form-check-input ms-3" name="<?= $strand ?>" value="TRUE" disabled>
-																	<input type="hidden" name="<?= $strand ?>" value="TRUE">
+																<label class="form-check-label" data-bs-toggle="tooltip" title="<?= $desc ?>">
+																	<span class='badge activityStrandBadge'><?= $shortname ?></span>
+																	<input type="checkbox" class="form-check-input ms-3" name="<?= $shortname ?>" value="TRUE" disabled>
+																	<input type="hidden" name="<?= $shortname ?>" value="TRUE">
 																</label>
 															</td>
 														<?php } ?>
@@ -661,12 +684,12 @@
 											<div class="row mt-2">
 												<table class="table table-sm table-borderless">
 													<tr>
-														<?php foreach ($ALL_LOS as $lo) { ?>
+														<?php foreach ($ALL_LOS as $shortname => $desc) { ?>
 															<td>
-																<label class="form-check-label">
-																	<span class='badge activityStrandBadge'><?= substr($lo, 2) ?></span>
-																	<input type="checkbox" class="form-check-input ms-3" name="<?= $lo ?>" value="TRUE" disabled>
-																	<input type="hidden" name="<?= $lo ?>" value="TRUE">
+																<label class="form-check-label" data-bs-toggle="tooltip" title="<?= $desc ?>">
+																	<span class='badge activityStrandBadge'><?= substr($shortname, 2) ?></span>
+																	<input type="checkbox" class="form-check-input ms-3" name="<?= $shortname ?>" value="TRUE" disabled>
+																	<input type="hidden" name="<?= $shortname ?>" value="TRUE">
 																</label>
 															</td>
 														<?php } ?>
@@ -715,11 +738,11 @@
 											<div class="row mt-2">
 												<table class="table table-sm table-borderless">
 													<tr>
-														<?php foreach ($ALL_STRANDS as $strand) { ?>
+														<?php foreach ($ALL_STRANDS as $shortname => $desc) { ?>
 															<td>
-																<label class="form-check-label">
-																	<span class='badge activityStrandBadge'><?= $strand ?></span>
-																	<input type="checkbox" class="form-check-input ms-3" name="<?= $strand ?>" value="TRUE">
+																<label class="form-check-label" data-bs-toggle="tooltip" title="<?= $desc ?>">
+																	<span class='badge activityStrandBadge'><?= $shortname ?></span>
+																	<input type="checkbox" class="form-check-input ms-3" name="<?= $shortname ?>" value="TRUE">
 																</label>
 															</td>
 														<?php } ?>
@@ -731,11 +754,11 @@
 											<div class="row mt-2">
 												<table class="table table-sm table-borderless">
 													<tr>
-														<?php foreach ($ALL_LOS as $lo) { ?>
+														<?php foreach ($ALL_LOS as $shortname => $desc) { ?>
 															<td>
-																<label class="form-check-label">
-																	<span class='badge activityStrandBadge'><?= substr($lo, 2) ?></span>
-																	<input type="checkbox" class="form-check-input ms-3" name="<?= $lo ?>" value="TRUE">
+																<label class="form-check-label" data-bs-toggle="tooltip" title="<?= $desc ?>">
+																	<span class='badge activityStrandBadge'><?= substr($shortname, 2) ?></span>
+																	<input type="checkbox" class="form-check-input ms-3" name="<?= $shortname ?>" value="TRUE">
 																</label>
 															</td>
 														<?php } ?>
@@ -780,7 +803,7 @@
 														if ($strand["completed"]) {
 															$color = "text-bg-success";
 														}
-														echo "<span class='badge activityStrandBadge $color'>".$strand["scalereqshortname"]."</span>";
+														echo "<span class='badge activityStrandBadge $color' data-bs-toggle='tooltip' title='{$strand["scalereqdescription"]}'>".$strand["scalereqshortname"]."</span>";
 													}
 												?>
 											</td>
@@ -792,7 +815,7 @@
 														if ($LO["completed"]) {
 															$color = "text-bg-success";
 														}
-														echo "<span class='badge activityLOBadge $color'>".substr($LO["scalereqshortname"], 2)."</span>";
+														echo "<span class='badge activityLOBadge $color' data-bs-toggle='tooltip' title='{$LO["scalereqdescription"]}'>".substr($LO["scalereqshortname"], 2)."</span>";
 													}
 												?>
 											</td>

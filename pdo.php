@@ -4,17 +4,20 @@ $pdo = new PDO("mysql:host=localhost;port=3306;dbname=scalesite", "admin", "scal
 $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
 
 
+$ALL_SCALE_REQS = [];
+$ALL_STRANDS = [];
+$ALL_LOS = [];
 
-$scaleReqShortnames = [];
-$query = $pdo->query("SELECT `scalerequirementid`, `shortname` FROM `scalerequirements`");
+foreach (getSQLData("SELECT `shortname`, `description` FROM `scalerequirements`;") as $scaleReq) {
+	$ALL_SCALE_REQS[$scaleReq['shortname']] = $scaleReq['description'];
 
-while ($inforow = $query->fetch(PDO::FETCH_OBJ)) {
-	$inforow = get_object_vars($inforow);
-	$scaleReqShortnames[$inforow["shortname"]] = $inforow["scalerequirementid"];
+	if(str_contains($scaleReq['shortname'], "LO")) {
+		$ALL_LOS[$scaleReq['shortname']] = $scaleReq['description'];
+	}
+	else {
+		$ALL_STRANDS[$scaleReq['shortname']] = $scaleReq['description'];
+	}
 }
-$query ->closeCursor();
-
-
 
 function getSQLData($query) {
 	global $pdo;
@@ -29,48 +32,30 @@ function getSQLData($query) {
 	return $sqldatatemp;
 }
 
+function getUserData($userid) {
+	global $pdo;
+	$sql = "SELECT
+				`users`.`userid`,
+				`users`.`username`,
+				`persons`.`personid`,
+				`persons`.`fullname`,
+				IFNULL(`students`.`studentid`, 0) AS 'studentid',
+				`employees`.`employeeid`,
+				`coordinators`.`coordinatorid`
+			FROM `users`
+			LEFT JOIN `persons` ON `persons`.`userid` = `users`.`userid`
+			LEFT JOIN `students` ON `students`.`personid` = `persons`.`personid`
+			LEFT JOIN `employees` ON `employees`.`userid` = `users`.`userid`
+			LEFT JOIN `coordinators` ON `coordinators`.`employeeid` = `employees`.`employeeid`
+			WHERE `users`.`userid` = $userid
+			ORDER BY `users`.`userid`;";
 
-
-// Goes through an array of scaleReqs and whether they should be inserted and adds them or deletes them without repetition
-function addOrRemoveScaleReq($activitystudentid, $scaleReq, $action, $insertedBy) {
-	global $pdo, $scaleReqShortnames;
-	static $scaleadvisorid = 1;
-	
-	if (!$scaleadvisorid) {
-		$sql = "SELECT
-					`activitystudentid`,
-					`activitystudents`.`studentid`,
-					`scaleadvisors`.`scaleadvisorid` AS 'scaleadvisorid',
-					`scaleadvisors`.`isactive` AS 'isactive'
-				FROM `activitystudents`
-				JOIN `students` ON `students`.`studentid` = `activitystudents`.`studentid`
-				JOIN `scaleadvisors` ON `scaleadvisors`.`studentid` = `students`.`studentid`
-				WHERE `activitystudentid` = $activitystudentid
-					AND `activitystudents`.`isactive`;";
-
-		$scaleadvisorid = getSQLData($sql)[0]["scaleadvisorid"];
-	}
-	
-	if ($action == "Add") {
-		$stmt = $pdo->prepare("CALL `Add_Student_Scale_Req` (:asid, :srid, :said, :ib)");
-		$stmt->execute(array(
-			':asid' => $activitystudentid,
-			':srid' => $scaleReqShortnames[$scaleReq],
-			':said' => 1,
-			':ib' => $insertedBy
-		));
-		$stmt -> closeCursor();
-	}
-	elseif ($action == "Remove") {
-		$stmt = $pdo->prepare("CALL `Remove_Student_Scale_Req` (:asid, :srid)");
-		$stmt->execute(array(
-			':asid' => $activitystudentid,
-			':srid' => $scaleReqShortnames[$scaleReq],
-		));
-		$stmt ->closeCursor();
-	}
+	$userData = getSQLData($sql)[0];
+	return $userData;
 }
 
+$userid = 3;
+$userData = getUserData($userid);
 ?>
 
 <!--If you want, you can change "admin" and "scaleable" into any username and password you want. Just make sure that they are the same values as the GRANT statement-->

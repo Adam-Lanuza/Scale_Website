@@ -3,7 +3,6 @@
 
 	$reqFields = [
 		"title",
-		"activitycode",
 		"type",
 		"prepStartDate",
 		"prepEndDate",
@@ -18,7 +17,7 @@
 	session_start();
 
 	function clearSessionValues($fields) {
-		array_push($fields, "cancel", "add");
+		array_push($fields, "edit");
 		foreach ($fields as $field) {
 			if (isset($_SESSION[$field])) {
 				unset($_SESSION[$field]);
@@ -26,17 +25,23 @@
 		}
 	}
 
-	// Clears all session data on [ Cancel ] press
-	if (isset($_POST["cancel"])) {
-		clearSessionValues(array_merge($reqFields, ["activityid"]));
-		header("Location: mySCALE.php");
+	function transferScaleReqInfo() {
+		global $ALL_SCALE_REQS;
+
+		$deletedScaleReqs = "";
+		foreach($ALL_SCALE_REQS as $scaleReq => $scaleReqDesc) {
+			if(!isset($_POST[$scaleReq])) {
+				$deletedScaleReqs = $deletedScaleReqs.$scaleReq;
+			}
+		}
+		$_SESSION["sreqs"] = $deletedScaleReqs;
 	}
 
 	//////////////////////
-	//		Add			//
+	//		Edit		//
 	//////////////////////
 
-	$allReqSessionValuesFilled = TRUE;
+	$allReqSessionValuesFilled = TRUE;	
 
 	foreach ($reqFields as $field) {
 		if(empty($_SESSION[$field])) {
@@ -45,11 +50,11 @@
 		}
 	}
 
-	if ($allReqSessionValuesFilled and $userData['personid']) {
-		$stmt = $pdo->prepare("CALL Create_Activity(:ti, :ac, :ty, :psd, :ped, :isd, :ied, :v, :d, :o, :p, :ib)");
+	if ($allReqSessionValuesFilled) {
+		$stmt = $pdo->prepare("CALL Edit_Activity(:aid, :ti, :ty, :psd, :ped, :isd, :ied, :v, :d, :o, :p)");
 		$stmt->execute(array(
+			':aid' => $_GET["activityId"],
 			':ti' => $_SESSION["title"],
-			':ac' => $_SESSION["activitycode"],
 			':ty' => $_SESSION["type"],
 			':psd' => $_SESSION["prepStartDate"],
 			':ped' => $_SESSION["prepEndDate"],
@@ -59,62 +64,65 @@
 			':d' => $_SESSION["description"],
 			':o' => $_SESSION["objectives"],
 			':p' => $_SESSION["publicity"],
-			':ib' => $userid
 		));
-		
-		// Gets the activityid of the recently added activity
-		$sql = "SELECT `activityid` FROM `activities`
-				ORDER BY insertedby DESC
-				LIMIT 1;";
-		$stmt = $pdo->query($sql);
-		unset($_SESSION["activityid"]);
-		$_SESSION["activityid"] = ($stmt->fetch(PDO::FETCH_ASSOC))["activityid"];
-
-		// Adds the activity creator to the newly created activity depending on the creator's type
-		if ($userData['studentid']) {
-			$stmt = $pdo->prepare("CALL Add_Student_to_Activity(:sid, :aid, :p, :s, :ib)");
-			$stmt->execute(array(
-				':sid' => $userData['studentid'],
-				':aid' => $_SESSION["activityid"],
-				':p' => "Organizer",
-				':s' => "P",
-				':ib' => $userid
-			));
-			$_SESSION["success"] = "Activity Successfully Added";
-		}
-		else {
-			$stmt = $pdo->prepare("CALL Add_Adult_Supervisor(:pid, :aid, :pos, :ib)");
-			$stmt->execute(array(
-				':pid' => $userData['personid'],
-				':aid' => $_SESSION["activityid"],
-				':pos' => "Primary Adult Supervisor",
-				':ib' => $userid
-			));
-
-			$stmt = $pdo->prepare("CALL Approve_Activity(:aid)");
-			$stmt->execute(array(
-				':aid' => $_SESSION["activityid"]
-			));
-			$_SESSION["success"] = "Activity Successfully Added";
-		}
-
-		clearSessionValues($reqFields);
 
 		$stmt ->closeCursor();
 
-		header("Location: mySCALE.php");
+		// Removes all students from taking a specific strand
+		// Gets all students in the activity that have a specific strand and disables all scale reqs connected to them
+		$sql = "SELECT DISTINCT activitystudents.activitystudentid AS 'x', scalerequirements.shortname, studentscalereqs.isactive FROM `studentscalereqs`
+				JOIN activitystudents ON activitystudents.activitystudentid = studentscalereqs.activitystudentid
+				JOIN scalerequirements ON scalerequirements.scalerequirementid = studentscalereqs.scalerequirementid
+				WHERE activitystudents.activityid = {$_GET['activityId']}
+					AND '{$_SESSION['sreqs']}' LIKE CONCAT('%', `scalerequirements`.`shortname`, '%')
+					AND studentscalereqs.isactive AND activitystudents.isactive;";
+
+		foreach(getSQLData($sql) as $asidInfo) {
+			$stmt = $pdo->prepare("CALL `Remove_Student_Scale_Reqs` (:asid, :sreqs)");
+			$stmt->execute(array(
+				':asid' => $asidInfo['x'],
+				':sreqs' => $_SESSION["sreqs"]
+			));
+			$stmt ->closeCursor();
+		}
+		
+		$_SESSION["success"] = "Activity ".$activityInfo["name"]." Updated Succesfully";
+
+		clearSessionValues(array_merge($ALL_SCALE_REQS, $reqFields));
+		header("Location: editActivity.php?activityId=".$_GET["activityId"]);
 		return;
 	}
 
-	if (isset($_POST["add"])) {
-		$_POST["activitycode"] = "3XCAMPLE03";
-
+	if (isset($_POST["edit"])) {
 		foreach ($reqFields as $field) {
 			$_SESSION[$field] = $_POST[$field];
 		}
 
-		header("Location: newActivity.php");
+		transferScaleReqInfo();
+
+		header("Location: editActivity.php?activityId=".$_GET['activityId']);
 		return;
+	}
+
+	//////////////////////
+	//		Select		//
+	//////////////////////
+
+	// Gets all the information about the activity except for strand data
+	$sql = "SELECT *
+			FROM activities
+			WHERE activityid = {$_GET['activityId']}";
+
+	$activityInfo = getSQLData($sql)[0];
+
+	$activeStrands = [];
+	foreach (getSQLData("CALL Get_Activity_Strands({$_GET['activityId']}, 0)") as $strand) {
+		array_push($activeStrands, $strand['scalereqshortname']);
+	}
+
+	$activeLOs= [];
+	foreach (getSQLData("CALL Get_Activity_LOs({$_GET['activityId']}, 0)") as $lo) {
+		array_push($activeLOs, $lo['scalereqshortname']);
 	}
 ?>
 
@@ -203,8 +211,12 @@
 			<div id="layoutSidenav_content">
 				<main>
 					<form class="container-fluid px-4" id="activityCreationForm" onsubmit="return checkFilledValues()" method="POST">
-						<h1 class="mt-4">Create New Activity</h1>
-
+						<h1 class="mt-4">Edit  <span class="fst-italic text-decoration-underline px-3"><?= $activityInfo["name"] ?></span>  Information </h1>
+						<?php
+						if (isset($_SESSION["success"])) {
+							echo "<p class='text-success'>".$_SESSION["success"]."</p>";
+							unset($_SESSION["success"]);
+						}?>
 						<ol class="breadcrumb mb-4">
 							<li class="breadcrumb-item active">Activity Details</li>
 						</ol>
@@ -212,7 +224,7 @@
 						<!-- Title -->
 						<div class="mb-3">
 							<label for="activityTitle" class="form-label h6">Activity Title</label>
-							<input type="text" class="form-control titleInput" name="title" id="activityTitle">
+							<input type="text" class="form-control titleInput" name="title" id="activityTitle" value="<?= $activityInfo["name"] ?>">
 						</div>
 
 						<!-- Type -->
@@ -220,26 +232,26 @@
 							<span class="h6 me-3">Activity Type: </span>
 							<span class="form-check form-check-inline">
 								<label class="form-check-label">
-									<input type="radio" class="form-check-input typeInput" name="type" value="individual">
+									<input type="radio" class="form-check-input typeInput" name="type" value="individual" <?= $activityInfo["type"] == "individual" ? 'checked' : '' ?>>
 									Individual
 								</label>
 							</span>
 							<span class="form-check form-check-inline">
 								<label class="form-check-label">	
-									<input type="radio" class="form-check-input typeInput" name="type" value="group">
+									<input type="radio" class="form-check-input typeInput" name="type" value="group" <?= $activityInfo["type"] == "group" ? 'checked' : '' ?>>
 									Group
 								</label>
 							</span>
 						</div>
 
 						<!-- Strand and Learning Outcome Information -->
-                        <div class="row mb-3">
+						<div class="row mb-3">
 							<div class="col-lg-3 my-2">
 								<span class="h6 me-3">Strands: </span>
 								<?php foreach($ALL_STRANDS as $shortname => $desc) { ?>
 									<div class="form-check">
 										<label class="form-check-label">
-											<input type="checkbox" class="form-check-input" name="<?= $shortname ?>" value="TRUE">
+											<input type="checkbox" class="form-check-input" name="<?= $shortname ?>" value="TRUE" <?= in_array($shortname, $activeStrands) ? "checked" : "" ?>>
 											<?= $desc ?>
 										</label>
 									</div>
@@ -250,14 +262,14 @@
 								<?php foreach($ALL_LOS as $shortname => $desc) { ?>
 									<div class="form-check">
 										<label class="form-check-label">
-											<input type="checkbox" class="form-check-input" name="<?= $shortname ?>" value="TRUE">
+											<input type="checkbox" class="form-check-input" name="<?= $shortname ?>" value="TRUE" <?= in_array($shortname, $activeLOs) ? "checked" : "" ?>>
 											<?= $desc ?>
 										</label>
 									</div>
 								<?php } ?>
 							</div>
 						</div>
-						
+
 						<!-- Dates -->
 						<div class="mb-3 row">
 							<?php
@@ -267,29 +279,29 @@
 
 							<div class="<?=$sectionWidth?>">
 								<label for="prepStartDate" class="<?=$labelWidth?>">Preparation Start Date: </label>
-								<input type="date" class="col form-control prepStartDateInput" name="prepStartDate" id="prepStartDate">
+								<input type="date" class="col form-control prepStartDateInput" name="prepStartDate" id="prepStartDate" value="<?= $activityInfo["prepstartdate"] ?>">
 							</div>
 
 							<div class="<?=$sectionWidth?>">
 								<label for="prepEndDate" class="<?=$labelWidth?>">Preparation End Date: </label>
-								<input type="date" class="col form-control prepEndDateInput" name="prepEndDate" id="prepEndDate">
+								<input type="date" class="col form-control prepEndDateInput" name="prepEndDate" id="prepEndDate" value="<?= $activityInfo["prependdate"] ?>">
 							</div>
 
 							<div class="<?=$sectionWidth?>">
 								<label for="implementStartDate" class="<?=$labelWidth?>">Implementation Start Date: </label>
-								<input type="date" class="col form-control implementStartDateInput" name="implementStartDate" id="implementStartDate">
+								<input type="date" class="col form-control implementStartDateInput" name="implementStartDate" id="implementStartDate" value="<?= $activityInfo["implementstartdate"] ?>">
 							</div>
 
 							<div class="<?=$sectionWidth?>">
 								<label for="implementEndDate" class="<?=$labelWidth?>">Implementation End Date: </label>
-								<input type="date" class="col form-control implementEndDateInput" name="implementEndDate" id="implementEndDate">
+								<input type="date" class="col form-control implementEndDateInput" name="implementEndDate" id="implementEndDate" value="<?= $activityInfo["implementenddate"] ?>">
 							</div>
 						</div>
 
 						<!-- Venue -->
 						<div class="mb-4 row align-items-center">
 							<label for="venue" class="form-label h6 col-auto">Activity Venue</label>
-							<input type="text" class="form-control col venueInput" name="venue" id="venue">
+							<input type="text" class="form-control col venueInput" name="venue" id="venue" value="<?= $activityInfo["venue"] ?>">
 						</div>
 
 						<ol class="breadcrumb mb-4">
@@ -299,13 +311,13 @@
 						<!-- General Description -->
 						<div class="mb-3">
 							<label class="form-label h6 d-block" for="desription">General Description of Activity</label>
-							<textarea name="description" id="description" class="form-control descriptionInput"></textarea>
+							<textarea name="description" id="description" class="form-control descriptionInput"><?= $activityInfo["description"] ?></textarea>
 						</div>
 
 						<!-- Objectives -->
 						<div class="mb-4">
 							<label class="form-label h6 d-block" for="desription">Objectives</label>
-							<textarea name="objectives" id="objectives" class="form-control objectivesInput"></textarea>
+							<textarea name="objectives" id="objectives" class="form-control objectivesInput"><?= $activityInfo["objectives"] ?></textarea>
 						</div>
 
 						<ol class="breadcrumb mb-4">
@@ -317,25 +329,25 @@
 							<div class="h6 me-3">Activity Publicity: </div>
 							<span class="form-check form-check-inline">
 								<label class="form-check-label" data-bs-toggle="tooltip" title="Everyone can see the activity in the activity list and can apply for it.">
-									<input type="radio" class="form-check-input publicityInput" name="publicity" value="public">
+									<input type="radio" class="form-check-input publicityInput" name="publicity" value="public" <?= $activityInfo["publicity"] == "public" ? 'checked' : '' ?>>
 									Public
 								</label>
 							</span>
 							<span class="form-check form-check-inline">
 								<label class="form-check-label" data-bs-toggle="tooltip" title="Only students in B2025 can see the activity in the activity list and can apply for it.">	
-									<input type="radio" class="form-check-input publicityInput" name="publicity" value="g12">
+									<input type="radio" class="form-check-input publicityInput" name="publicity" value="g12" <?= $activityInfo["publicity"] == "g12" ? 'checked' : '' ?>>
 									Batch 2025 Only
 								</label>
 							</span>
 							<span class="form-check form-check-inline" data-bs-toggle="tooltip" title="Only students in B2026 can see the activity in the activity list and can apply for it.">
 								<label class="form-check-label">	
-									<input type="radio" class="form-check-input publicityInput" name="publicity" value="g11">
+									<input type="radio" class="form-check-input publicityInput" name="publicity" value="g11" <?= $activityInfo["publicity"] == "g11" ? 'checked' : '' ?>>
 									Batch 2026 Only
 								</label>
 							</span>
 							<span class="form-check form-check-inline" data-bs-toggle="tooltip" title="The activity cannot be seen in the activity list. Only students who input the Activity Code can apply for the activity.">
 								<label class="form-check-label">	
-									<input type="radio" class="form-check-input publicityInput" name="publicity" value="private">
+									<input type="radio" class="form-check-input publicityInput" name="publicity" value="private" <?= $activityInfo["publicity"] == "private" ? 'checked' : '' ?>>
 									Private
 								</label>
 							</span>
@@ -344,9 +356,8 @@
 						<!-- Submit Buttons -->
 						<div>
 							<div class="errorBox text-danger mb-2"></div>
-							<a href="mySCALE.php" class="btn btn-danger submit">Cancel</a>
-							<button type="submit" class="btn btn-primary submit" name="add" value="add">Create Activity</button>
-							<!--<a class="btn btn-primary" href="addPeople.php">Next</a>-->
+							<a href="mySCALE.php" class="btn btn-danger submit">Back</a>
+							<button type="submit" class="btn btn-primary submit" name="edit" value="edit">Edit Activity</button>
 						</div>
 					</form>
 				</main>
