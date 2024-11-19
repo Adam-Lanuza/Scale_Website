@@ -163,6 +163,8 @@ CREATE TABLE `users` (
 CREATE TABLE `activities` (
   `activityid` int NOT NULL AUTO_INCREMENT,
   `name` varchar(255) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `activitycode` varchar(8) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
+  `type` varchar(8) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `prepstartdate` date DEFAULT NULL,
   `prependdate` date DEFAULT NULL,
   `implementstartdate` date DEFAULT NULL,
@@ -170,8 +172,10 @@ CREATE TABLE `activities` (
   `venue` text DEFAULT NULL,
   `description` text DEFAULT NULL,
   `objectives` text DEFAULT NULL,
+  `publicity` varchar(16) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `approved` boolean DEFAULT FALSE,
   `approvaldate` datetime DEFAULT NULL,
+  `overallstatus` varchar (16) COLLATE utf8mb3_unicode_ci DEFAULT NULL,
   `isactive` BOOLEAN DEFAULT TRUE,
   `insertedby` int DEFAULT NULL,
   `insertedon` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -269,7 +273,7 @@ CREATE TABLE `scaleadvisors` (
 CREATE TABLE `scalefaq` (
   `scalefaqid` int not null AUTO_INCREMENT,
   `question` varchar(255) COLLATE utf8mb3_unicode_ci NOT NULL,
-  `questioncategory` varchar(32) COLLATE utf8mb3_unicode_ci NOT NULL,
+  `category` varchar(32) COLLATE utf8mb3_unicode_ci NOT NULL,
   `answer` text DEFAULT NULL,
   `isactive` BOOLEAN DEFAULT TRUE,
   `insertedby` int DEFAULT NULL,
