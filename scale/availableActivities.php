@@ -17,15 +17,19 @@
 	
 	$nameFilter = !empty($_GET['activityName']) ? "%".$_GET['activityName']."%" : "%";
 
-	$sql = "SELECT activities.*, GROUP_CONCAT(shortname) FROM activities
-			JOIN activitystudents ON activitystudents.activityid = activities.activityid
+	$sql = "SELECT activities.*, GROUP_CONCAT(v.shortname) FROM activities
+		LEFT JOIN (
+			SELECT DISTINCT activityid AS activityid, shortname
+			FROM activitystudents
 			JOIN studentscalereqs ON studentscalereqs.activitystudentid = activitystudents.activitystudentid
 			JOIN scalerequirements ON scalerequirements.scalerequirementid = studentscalereqs.scalerequirementid
-			WHERE publicity IN ('public', 'g11', 'g12')
-				AND activities.name LIKE '$nameFilter'
-				AND shortname IN $reqFilter
+			WHERE shortname IN $reqFilter
 				AND activitystudents.isactive AND studentscalereqs.isactive
-			GROUP BY activities.activityid;";
+			ORDER BY scalerequirements.scalerequirementid DESC
+		) v ON v.activityid = activities.activityid
+		WHERE publicity IN ('public', 'g11', 'g12')
+			AND activities.name LIKE '$nameFilter'
+		GROUP BY activities.activityid;";
 
 	$activities = getSQLData($sql);
 ?>
