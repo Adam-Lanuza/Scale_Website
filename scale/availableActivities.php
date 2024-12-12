@@ -10,26 +10,23 @@
 			array_push($activeReqs, $scaleReq);
 		}
 	}
-	if(count($activeReqs) == 0) {
-		$activeReqs = array_keys($ALL_SCALE_REQS);
-	}
-	$reqFilter = "('".implode("','", $activeReqs)."')";
-	
-	$nameFilter = !empty($_GET['activityName']) ? "%".$_GET['activityName']."%" : "%";
 
-	$sql = "SELECT activities.*, GROUP_CONCAT(v.shortname) FROM activities
-				LEFT JOIN (
-					SELECT DISTINCT activityid AS activityid, shortname
+	$reqFilter = "('".implode("','", $activeReqs)."')";
+	$nameFilter = !empty($_GET['activityName']) ? "%".$_GET['activityName']."%" : "%";
+	
+	$sql = "SELECT activities.*, GROUP_CONCAT(v.shortname ORDER BY v.scalereqid) AS strandFilter FROM activities
+			LEFT JOIN (
+					SELECT DISTINCT activityid AS activityid, shortname, scalerequirements.scalerequirementid AS scalereqid
 					FROM activitystudents
 					JOIN studentscalereqs ON studentscalereqs.activitystudentid = activitystudents.activitystudentid
 					JOIN scalerequirements ON scalerequirements.scalerequirementid = studentscalereqs.scalerequirementid
 					WHERE shortname IN $reqFilter
 						AND activitystudents.isactive AND studentscalereqs.isactive
-					ORDER BY scalerequirements.scalerequirementid DESC
+					ORDER BY scalerequirements.scalerequirementid, activityid
 				) v ON v.activityid = activities.activityid
 			WHERE publicity IN ('public', 'g11', 'g12')
 				AND activities.name LIKE '$nameFilter'
-			GROUP BY activities.activityid;"; 
+			GROUP BY activities.activityid;";
 
 	$activities = getSQLData($sql);
 ?>
@@ -144,10 +141,25 @@
 										<div class="col col-12">
 											<div class="mb-4">
 												<b>Strands: </b>	
-												<div class="activityStrands"></div>
+												<div class="activityStrands row ms-2">
+													<?php
+														foreach ($ALL_STRANDS as $strand => $strandDesc) {
+															echo "<span class='badge activityStrandBadge' id='$strand'>$strand</span>";
+														}
+													?>
+												</div>
 
 												<b>Learning Outcomes: </b>
-												<div class="activityLOs"></div>
+												<div class="activityLOs row row-cols-lg-2 ms-2">
+													<?php
+														foreach ($ALL_LOS as $lo => $loDesc) {
+															echo "<div class='row mb-2'>";
+																echo "<div class='badge activityLOBadge me-1 col col-auto' id='$lo'>".substr($lo, 2)."</div>";
+																echo "<div class='col'>$loDesc</div>";
+															echo "</div>";
+														}
+													?>
+												</div>
 											</div>
 											<div class="mb-2 container container-fluid activityInfoSection">
 												<h5>Activity Description</h5>
@@ -202,8 +214,11 @@
 						</form>
 
 						<!-- Activity List -->
-						<div class="row row-cols-md-3 g-3">
-							<?php foreach($activities as $activity) { ?>
+						<div class="row row-cols-md-2 g-3">
+							<?php
+							foreach($activities as $activity) {
+								if ($activity['strandFilter'] == implode(",", $activeReqs)) {
+							?>
 								<div class="col-md">
 									<div class="card" id="activityCard<?= $activity['activityid'] ?>">
 										<div class="card-body">
@@ -214,8 +229,8 @@
 													<button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#activityModal" data-bs-aid="<?= $activity['activityid'] ?>">Learn More</button>
 												</div>
 												<div class="col-4">
-													<div class="row g-0 d-flex flex-nowrap">
-														<div class="col m-0">
+													<div class="row g-0 d-flex flex-nowrap justify-content-end">
+														<div class="strandColumn">
 															<?php
 																$strands = getSQLData("CALL Get_Activity_Strands({$activity['activityid']}, 0)");
 																foreach ($strands as $strand) {
@@ -223,7 +238,7 @@
 																}
 															?>
 														</div>     
-														<div class="col m-0">
+														<div class="strandColumn">
 															<?php
 																$los = getSQLData("CALL Get_Activity_LOs({$activity['activityid']}, 0)");
 																foreach ($los as $lo) {
@@ -237,7 +252,7 @@
 										</div>
 									</div>
 								</div>
-							<?php } ?>
+							<?php }} ?>
 						</div>
 					</div>
 				</main>
