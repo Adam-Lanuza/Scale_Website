@@ -41,7 +41,7 @@
 	//////////////////////
 
 	if (isset($_SESSION["join"]) && isset($_SESSION["position"])) {
-		$stmt = $pdo->prepare("CALL Add_Student_to_Activity(:sid, :aid, :p, :s, :ib)");
+		$stmt = $pdo->prepare("CALL Add_Student_to_Activity(:sid, :aid, :p, :s, :ib, @asid)");
 		$stmt->execute(array(
 			':sid' => $userData['studentid'],
 			':aid' => $_GET["activityId"],
