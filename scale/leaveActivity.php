@@ -339,14 +339,14 @@
 						</div>
 						<form class="activityActions row" method="POST">
 							<div class="col-12 d-flex justify-content-evenly mb-3">
-								<a class="btn btn-primary mb-0" href="mySCALE.php" role="button">Back</a>
-								<button class="btn btn-danger" type="submit" name="leave" value="leave" id="leaveButton" disabled>Leave Activity</button>
-							</div>
-							<div class="col-12 d-flex justify-content-evenly">
 								<label class="form-check-label">
 									By checking this, I confirm that I wish to leave <?= $activity['name'] ?>
 									<input type="checkbox" name="confirm" value="confirm" class="me-2"  onClick="enableLeaveButton(this)">
 								</label>
+							</div>
+							<div class="col-12 d-flex justify-content-evenly">
+								<a class="btn btn-primary mb-0" href="mySCALE.php" role="button">Back</a>
+								<button class="btn btn-danger" type="submit" name="leave" value="leave" id="leaveButton" disabled>Leave Activity</button>
 							</div>
 						</form>
 					</div>
