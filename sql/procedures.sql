@@ -1,17 +1,25 @@
 DELIMITER $$
---
--- Procedures
---
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Add_Adult_Supervisor` (IN `pid` INT, IN `aid` INT, IN `pos` VARCHAR(128), IN `ib` INT)   INSERT INTO `adultsupervisors`(`personid`, `activityid`, `position`, `insertedby`)
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Add_Adult_Supervisor`(IN `pid` INT, IN `aid` INT, IN `pos` VARCHAR(128), IN `ib` INT)
+INSERT INTO `adultsupervisors`(`personid`, `activityid`, `position`, `insertedby`)
 VALUES (pid, aid, pos, ib)
 ON DUPLICATE KEY UPDATE
 	`isactive` = 1,
 	`position` = pos$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Add_Question` (IN `question` VARCHAR(255), IN `category` VARCHAR(32), IN `answer` TEXT, IN `insertedby` INT)   INSERT INTO `scalefaq` (`question`, `category`, `answer`, `insertedby`)
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Add_Material`(IN `n` VARCHAR(255), IN `q` INT(11), IN `c` DECIMAL(8,2), IN `aid` INT, IN `ib` INT)
+INSERT INTO `materials`(`name`, `quantity`, `cost`, `activityid`, `insertedby`)
+VALUES (n, q, c, aid, ib)$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Add_Question`(IN `question` VARCHAR(255), IN `category` VARCHAR(32), IN `answer` TEXT, IN `insertedby` INT)
+INSERT INTO `scalefaq` (`question`, `category`, `answer`, `insertedby`)
 	VALUES (question, category, answer, insertedby)$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Add_Student_Scale_Req` (IN `asid` INT, IN `sreq` VARCHAR(255), IN `said` INT, IN `ib` INT)   BEGIN
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Add_Risk`(IN `aid` INT, IN `r` VARCHAR(255), IN `p` VARCHAR(512), IN `ib` INT)
+INSERT INTO `risks`(`activityid`, `risk`, `precaution`, `insertedby`) VALUES
+	(aid, r, p, ib)$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Add_Student_Scale_Req`(IN `asid` INT, IN `sreq` VARCHAR(255), IN `said` INT, IN `ib` INT)
+BEGIN
 	DECLARE srid VARCHAR(255);
 	SELECT scalerequirements.scalerequirementid INTO srid FROM scalerequirements
 	WHERE scalerequirements.shortname = sreq LIMIT 1;
@@ -21,30 +29,60 @@ CREATE DEFINER=`root`@`localhost` PROCEDURE `Add_Student_Scale_Req` (IN `asid` I
 	ON DUPLICATE KEY UPDATE `isactive` = 1;
 END$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Add_Student_to_Activity` (IN `sid` INT, IN `aid` INT, IN `p` VARCHAR(64), IN `s` VARCHAR(16), IN `ib` INT)   INSERT INTO `activitystudents`(`studentid`, `activityid`, `position`, `status`, `insertedby`)
-VALUES (sid, aid, p, s, ib)
-ON DUPLICATE KEY UPDATE
-	`isactive` = 1,
-	`position` = p$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Add_Student_to_Activity`(IN `sid` INT, IN `aid` INT, IN `p` VARCHAR(64), IN `s` VARCHAR(16), IN `ib` INT, OUT `asid` INT)
+BEGIN
+	INSERT INTO `activitystudents`(`studentid`, `activityid`, `position`, `status`, `insertedby`)
+	VALUES (sid, aid, p, s, ib)
+	ON DUPLICATE KEY UPDATE
+		`isactive` = 1,
+		`position` = p;
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Approve_Activity` (IN `aid` INT)   UPDATE `activities`
+	SET asid = (SELECT `activitystudentid` FROM `activitystudents`
+	ORDER BY insertedon DESC
+	LIMIT 1);
+	
+	SELECT asid;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Approve_Activity`(IN `aid` INT)
+UPDATE `activities`
 SET `approved`=TRUE, `approvaldate`=CURRENT_TIMESTAMP, `overallstatus`='IP-P'
 WHERE `activityid` = aid$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Create_Activity` (IN `ti` VARCHAR(255), IN `ac` VARCHAR(8), IN `ty` VARCHAR(16), IN `psd` DATE, IN `ped` DATE, IN `isd` DATE, IN `ied` DATE, IN `v` TEXT, IN `d` TEXT, IN `o` TEXT, IN `p` VARCHAR(16), IN `ib` INT)   INSERT INTO `activities`
-	(`name`, `activitycode`, `type`, `prepstartdate`, `prependdate`, `implementstartdate`, `implementenddate`, `venue`, `description`, `objectives`, `publicity`, `overallstatus`, `insertedby`)
-VALUES
-	(ti, ac, ty, psd, ped, isd, ied, v, d, o, p, 'P', ib)$$
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Create_Activity`(IN `ti` VARCHAR(255), IN `ac` VARCHAR(8), IN `ty` VARCHAR(16), IN `psd` DATE, IN `ped` DATE, IN `isd` DATE, IN `ied` DATE, IN `v` TEXT, IN `d` TEXT, IN `o` TEXT, IN `p` VARCHAR(16), IN `ib` INT, OUT `aid` INT)
+BEGIN
+	INSERT INTO `activities`
+		(`name`, `activitycode`, `type`, `prepstartdate`, `prependdate`, `implementstartdate`, `implementenddate`, `venue`, `description`, `objectives`, `publicity`, `overallstatus`, `insertedby`)
+	VALUES
+		(ti, ac, ty, psd, ped, isd, ied, v, d, o, p, 'P', ib);
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Delete_Adult_Supervisor` (IN `sid` INT)   UPDATE `adultsupervisors`
+	SET aid = (SELECT `activityid` FROM `activities`
+	ORDER BY insertedon DESC
+	LIMIT 1);
+	
+	SELECT aid;
+END$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Delete_Adult_Supervisor`(IN `sid` INT)
+UPDATE `adultsupervisors`
 	SET `adultsupervisors`.`isactive` = FALSE
 	WHERE `adultsupervisors`.`supervisorid` = sid$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Delete_Question` (IN `qid` INT)   UPDATE `scalefaq`
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Delete_Material`(IN `mid` INT)
+UPDATE `materials`
+	SET `isactive` = FALSE
+WHERE `materialid` = mid$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Delete_Question`(IN `qid` INT)
+UPDATE `scalefaq`
 	SET `scalefaq`.`isactive` = FALSE
 	WHERE `scalefaq`.`scalefaqid` = qid$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Edit_Activity` (IN `aid` INT, IN `ti` VARCHAR(255), IN `ty` VARCHAR(16), IN `psd` DATE, IN `ped` DATE, IN `isd` DATE, IN `ied` DATE, IN `v` TEXT, IN `d` TEXT, IN `o` TEXT, IN `p` VARCHAR(16))   UPDATE `activities`
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Delete_Risk`(IN `rid` INT)
+UPDATE `risks` SET `isactive` = FALSE WHERE `riskid` = rid$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Edit_Activity`(IN `aid` INT, IN `ti` VARCHAR(255), IN `ty` VARCHAR(16), IN `psd` DATE, IN `ped` DATE, IN `isd` DATE, IN `ied` DATE, IN `v` TEXT, IN `d` TEXT, IN `o` TEXT, IN `p` VARCHAR(16))
+UPDATE `activities`
 SET
 	`name` = ti,
 	`type` = ty,
@@ -58,21 +96,38 @@ SET
 	`publicity` = p
 WHERE `activityid` = aid$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Edit_Question` (IN `qid` INT, IN `question` VARCHAR(255), IN `category` VARCHAR(32), IN `answer` TEXT)   UPDATE `scalefaq`
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Edit_Material`(IN `mid` INT, IN `n` VARCHAR(255), IN `q` INT, IN `c` DECIMAL(8,2))
+UPDATE `materials` SET
+	`name` = n,
+	`quantity` = q,
+	`cost` = c
+WHERE `materialid` = mid$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Edit_Question`(IN `qid` INT, IN `question` VARCHAR(255), IN `category` VARCHAR(32), IN `answer` TEXT)
+UPDATE `scalefaq`
 	SET `scalefaq`.`question` = question,
 		`scalefaq`.`category` = category,
 		`scalefaq`.`answer` = answer
 	WHERE `scalefaq`.`scalefaqid` = qid$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Edit_Student_Position` (IN `asid` INT, IN `pos` VARCHAR(64))   UPDATE `activitystudents`
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Edit_Risk`(IN `rid` INT, IN `r` VARCHAR(255), IN `p` VARCHAR(512))
+UPDATE `risks` SET
+	`risk` = r,
+	`precaution` = p
+WHERE `riskid` = rid$$
+
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Edit_Student_Position`(IN `asid` INT, IN `pos` VARCHAR(64))
+UPDATE `activitystudents`
 	SET `activitystudents`.`position` = pos
 	WHERE `activitystudents`.`activitystudentid` = asid$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Edit_Supervisor_Position` (IN `sid` INT, IN `pos` VARCHAR(128))   UPDATE `adultsupervisors`
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Edit_Supervisor_Position`(IN `sid` INT, IN `pos` VARCHAR(128))
+UPDATE `adultsupervisors`
 	SET `adultsupervisors`.`position` = pos
 	WHERE `adultsupervisors`.`supervisorid` = sid$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Get_Activity_LOs` (IN `activityid` INT, IN `studentid` INT)   SELECT DISTINCT
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Get_Activity_LOs`(IN `activityid` INT, IN `studentid` INT)
+SELECT DISTINCT
 	`activitystudents`.`activityid` AS `activityid`,
 	`studentscalereqs`.`scalerequirementid` AS `scalerequirementid`,
 	`scalerequirements`.`title` AS `scalereqtitle`,
@@ -93,7 +148,8 @@ WHERE `activitystudents`.`activityid` = activityid
 GROUP BY `studentscalereqs`.`scalerequirementid`
 ORDER BY `studentscalereqs`.`scalerequirementid`$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Get_Activity_Strands` (IN `activityid` INT, IN `studentid` INT)   SELECT DISTINCT
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Get_Activity_Strands`(IN `activityid` INT, IN `studentid` INT)
+SELECT DISTINCT
 	`activitystudents`.`activityid` AS `activityid`,
 	`studentscalereqs`.`scalerequirementid` AS `scalerequirementid`,
 	`scalerequirements`.`title` AS `scalereqtitle`,
@@ -114,11 +170,13 @@ WHERE `activitystudents`.`activityid` = activityid
 GROUP BY `studentscalereqs`.`scalerequirementid`
 ORDER BY `studentscalereqs`.`scalerequirementid`$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Get_All_Questions` ()   SELECT * FROM `scalefaq`
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Get_All_Questions`()
+SELECT * FROM `scalefaq`
 	WHERE `scalefaq`.`isactive` = TRUE
 	ORDER BY `scalefaq`.`category`$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Get_Student_Activities` (IN `studentid` INT)   SELECT
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Get_Student_Activities`(IN `studentid` INT)
+SELECT
 	`activitystudents`.`activitystudentid` AS `activitystudentid`,
 	`activitystudents`.`studentid` AS `studentid`,
 	`activitystudents`.`activityid` AS `activityid`,
@@ -141,7 +199,8 @@ WHERE `activitystudents`.`studentid` = studentid
 	AND activitystudents.`isactive` = TRUE
 ORDER BY `activitystudents`.`status` DESC$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Get_Supervisor_Activities` (IN `personid` INT)   SELECT
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Get_Supervisor_Activities`(IN `personid` INT)
+SELECT
 	`adultsupervisors`.`supervisorid` AS `supervisorid`,
 	`adultsupervisors`.`activityid` AS `activityid`,
 	`activities`.`name` AS `activityname`,
@@ -163,14 +222,15 @@ WHERE `adultsupervisors`.`personid` = personid
 	AND `adultsupervisors`.`isactive` = TRUE
 ORDER BY `activities`.`overallstatus` DESC$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Remove_Student_From_Activity` (IN `asid` INT)   UPDATE `activitystudents`
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Remove_Student_From_Activity`(IN `asid` INT)
+UPDATE `activitystudents`
 	SET `activitystudents`.`isactive` = FALSE
 	WHERE `activitystudents`.`activitystudentid` = asid$$
 
-CREATE DEFINER=`root`@`localhost` PROCEDURE `Remove_Student_Scale_Reqs` (IN `asid` INT, IN `sreqs` VARCHAR(255))   UPDATE `studentscalereqs`
+CREATE DEFINER=`root`@`localhost` PROCEDURE `Remove_Student_Scale_Reqs`(IN `asid` INT, IN `sreqs` VARCHAR(255))
+UPDATE `studentscalereqs`
 JOIN `scalerequirements` ON `scalerequirements`.`scalerequirementid` = `studentscalereqs`.`scalerequirementid`
 SET `studentscalereqs`.`isactive` = 0
 WHERE (`activitystudentid` = asid)
 	AND sreqs LIKE CONCAT('%', `scalerequirements`.`shortname`, '%')$$
-
 DELIMITER ;
