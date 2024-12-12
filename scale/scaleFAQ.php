@@ -457,7 +457,7 @@
 					?>
 							<div class="accordion-item ms-4">
 								<h2 class="accordion-header" id="<?= 'question'.$qid ?>">
-									<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#<?= 'answer'.$qid ?>" aria-expanded="true" aria-controls="<?= 'answer'.$qid ?>">
+									<button class="accordion-button collapsed" style="font-size:1.25rem" type="button" data-bs-toggle="collapse" data-bs-target="#<?= 'answer'.$qid ?>" aria-expanded="true" aria-controls="<?= 'answer'.$qid ?>">
 										<?= $qquestion?>
 									</button>
 								</h2>
