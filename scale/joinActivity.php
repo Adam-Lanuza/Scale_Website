@@ -42,25 +42,16 @@
 	//////////////////////
 
 	if (isset($_SESSION["join"]) && isset($_SESSION["position"])) {
-        $stmt = $pdo->prepare("CALL Add_Student_to_Activity(:sid, :aid, :p, :s, :ib, @asid)");
+		$stmt = $pdo->prepare("CALL Add_Student_to_Activity(:sid, :aid, :p, :s, :ib, @asid)");
 		$stmt->execute(array(
 			':sid' => $userData['studentid'],
-			':aid' => $_GET["activityId"],
-			':p' => $_SESSION["position"],
+			':aid' => $newActivityID,
+			':p' => "Organizer",
 			':s' => "P",
 			':ib' => $userid
 		));
+		$asid = $stmt->fetch(PDO::FETCH_ASSOC)['asid'];
 		$_SESSION["success"] = "Activity Successfully Joined";
-
-		// Gets the activitystudentid of the recently added student
-		$sql = "SELECT `activitystudentid` FROM `activitystudents`
-				WHERE `activityid` = {$_GET["activityId"]}
-					AND `studentid` = {$userData['studentid']}
-				ORDER BY insertedby DESC
-				LIMIT 1;";
-		$stmt = $pdo->query($sql);
-
-		$asid = ($stmt->fetch(PDO::FETCH_ASSOC))["activitystudentid"];
 
 		// Forces a hard reset of the student's SCALE strands in case that person was in the activity previously
 		$stmt = $pdo->prepare("CALL `Remove_Student_Scale_Reqs` (:asid, :sreqs)");
