@@ -17,7 +17,6 @@
 	function transferScaleReqInfo() {
 		global $ALL_SCALE_REQS;
 
-		$deletedScaleReqs = "";
 		foreach($ALL_SCALE_REQS as $scaleReq => $scaleReqDesc) {
 			if(isset($_POST[$scaleReq])) {
 				$_SESSION[$scaleReq] = true;
@@ -42,7 +41,7 @@
 	//////////////////////
 
 	if (isset($_SESSION["join"]) && isset($_SESSION["position"])) {
-        $stmt = $pdo->prepare("CALL Add_Student_to_Activity(:sid, :aid, :p, :s, :ib)");
+		$stmt = $pdo->prepare("CALL Add_Student_to_Activity(:sid, :aid, :p, :s, :ib)");
 		$stmt->execute(array(
 			':sid' => $userData['studentid'],
 			':aid' => $_GET["activityId"],
@@ -52,15 +51,7 @@
 		));
 		$_SESSION["success"] = "Activity Successfully Joined";
 
-		// Gets the activitystudentid of the recently added student
-		$sql = "SELECT `activitystudentid` FROM `activitystudents`
-				WHERE `activityid` = {$_GET["activityId"]}
-					AND `studentid` = {$userData['studentid']}
-				ORDER BY insertedby DESC
-				LIMIT 1;";
-		$stmt = $pdo->query($sql);
-
-		$asid = ($stmt->fetch(PDO::FETCH_ASSOC))["activitystudentid"];
+		$asid = $stmt->fetch(PDO::FETCH_ASSOC)['asid'];
 
 		// Forces a hard reset of the student's SCALE strands in case that person was in the activity previously
 		$stmt = $pdo->prepare("CALL `Remove_Student_Scale_Reqs` (:asid, :sreqs)");
