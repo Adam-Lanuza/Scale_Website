@@ -101,12 +101,12 @@
 					<div class="container-fluid px-4">
 						<h1 class="mt-4">My SCALE</h1>
 
-                        <?php
+						<?php
 						if (isset($_SESSION["success"])) {
 							echo "<p class='text-success'>".$_SESSION["success"]."</p>";
 							unset($_SESSION["success"]);
 						}
-                        ?>
+						?>
 
 						<ol class="breadcrumb mb-4">
 							<li class="breadcrumb-item active">Add Activity</li>
@@ -117,20 +117,20 @@
 							<span class="mx-3">or</span>
 							<a class="btn btn-primary" href="availableActivities.php" role="button">View Available Activities</a>
 
-                            <!--
+							<!--
 
-                            Form input that ideally allows people to join an activity using a unique code that can be given out.
-                            Dropped because it would require
-                                1. A unique code generator
-                                2. A join modal in mySCALE.php
-                                3. Joining functionality
+							Form input that ideally allows people to join an activity using a unique code that can be given out.
+							Dropped because it would require
+								1. A unique code generator
+								2. A join modal in mySCALE.php
+								3. Joining functionality
 
 							<span class="mx-3">or</span>
 							<span class="input-group d-inline-flex" style="width: 250px">
 								<input type="text" class="form-control" placeholder="Activity Code"/>
 								<button type="button" class="btn btn-primary" data-mdb-ripple-init>Apply</button>
 							</span>
-                            -->
+							-->
 						</div>
 
 						<?php
@@ -161,8 +161,8 @@
 
 							<div class="card mb-4" id="<?= $activity["activityname"]."Card" ?>">
 								<div class="accordion accordion-flush">
-									<button class="p-3 accordion-button collapsed bg-transparent" type="button" data-bs-toggle="collapse" data-bs-target="#activityBody<?= $activityid ?>" aria-expanded="true" aria-controls="activityBody<?= $activityid ?>">
-										<div id="activityHead<?= $activityid ?>">
+									<button class="p-3 accordion-button mySCALEAccordian collapsed bg-transparent" type="button" data-bs-toggle="collapse" data-bs-target="#activityBody<?= $activityid ?>" aria-expanded="true" aria-controls="activityBody<?= $activityid ?>">
+										<div id="activityHead<?= $activityid ?>" class="ps-4 ms-2">
 											<div class="mb-1">
 												<h5 class="card-title align-middle"><?= $activity["activityname"] ?></h5>
 											</div>
