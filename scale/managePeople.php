@@ -66,7 +66,7 @@
 		// Students
 
 	if (!empty($_SESSION["system"]) && ($_SESSION["system"] == "Add Student") && !empty($_SESSION["studentid"]) && !empty($_GET["activityId"]) && !empty($_SESSION["position"]) && !empty($_SESSION["name"])) {
-		$stmt = $pdo->prepare("CALL Add_Student_to_Activity(:sid, :aid, :p, :s, :ib)");
+		$stmt = $pdo->prepare("CALL Add_Student_to_Activity(:sid, :aid, :p, :s, :ib, @asid)");
 		$stmt->execute(array(
 			":sid" => $_SESSION["studentid"],
 			':aid' => $_GET["activityId"],
@@ -74,12 +74,9 @@
 			':s' => "IP-P",
 			':ib' => $userid
 		));
+		$asid = $stmt->fetch(PDO::FETCH_ASSOC)['asid'];
 
-		$sql = "SELECT activitystudentid FROM  activitystudents
-				WHERE studentid = {$_SESSION["studentid"]}
-					AND activityid = {$_GET["activityId"]}
-				LIMIT 1;";
-		$asid = getSQLData($sql)[0]["activitystudentid"];
+		$stmt->closeCursor();
 
 		$stmt = $pdo->prepare("CALL `Remove_Student_Scale_Reqs` (:asid, :sreqs)");
 		$stmt->execute(array(
