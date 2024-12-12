@@ -18,18 +18,18 @@
 	$nameFilter = !empty($_GET['activityName']) ? "%".$_GET['activityName']."%" : "%";
 
 	$sql = "SELECT activities.*, GROUP_CONCAT(v.shortname) FROM activities
-		LEFT JOIN (
-			SELECT DISTINCT activityid AS activityid, shortname
-			FROM activitystudents
-			JOIN studentscalereqs ON studentscalereqs.activitystudentid = activitystudents.activitystudentid
-			JOIN scalerequirements ON scalerequirements.scalerequirementid = studentscalereqs.scalerequirementid
-			WHERE shortname IN $reqFilter
-				AND activitystudents.isactive AND studentscalereqs.isactive
-			ORDER BY scalerequirements.scalerequirementid DESC
-		) v ON v.activityid = activities.activityid
-		WHERE publicity IN ('public', 'g11', 'g12')
-			AND activities.name LIKE '$nameFilter'
-		GROUP BY activities.activityid;";
+				LEFT JOIN (
+					SELECT DISTINCT activityid AS activityid, shortname
+					FROM activitystudents
+					JOIN studentscalereqs ON studentscalereqs.activitystudentid = activitystudents.activitystudentid
+					JOIN scalerequirements ON scalerequirements.scalerequirementid = studentscalereqs.scalerequirementid
+					WHERE shortname IN $reqFilter
+						AND activitystudents.isactive AND studentscalereqs.isactive
+					ORDER BY scalerequirements.scalerequirementid DESC
+				) v ON v.activityid = activities.activityid
+			WHERE publicity IN ('public', 'g11', 'g12')
+				AND activities.name LIKE '$nameFilter'
+			GROUP BY activities.activityid;"; 
 
 	$activities = getSQLData($sql);
 ?>
@@ -158,7 +158,7 @@
 								</div>
 								<div class="modal-footer">
 									<div class="mx-auto">
-										<a href="joinActivity.php?activityId=7" class="btn btn-primary" id="applyButton">Apply</a>
+										<a href="" class="btn btn-primary" id="applyButton">View Details & Apply</a>
 									</div>
 								</div>
 							</div>
