@@ -30,6 +30,24 @@ function checkFilledValues() {
 	// If all text boxes and radios are filled, returns true, allowing the form to submit
 	// If at least one textbox/radio is empty, returns false, preventing the form from submitting while retaining the content
 	if (textFilled && radioFilled) {
+		var datesInOrder = true;
+		var dateBoxes = ["prepStartDate", "prepEndDate", "implementStartDate", "implementEndDate"];
+		for (var i=0; i < dateBoxes.length-1; i++) {
+			var datebox1 = activityCreationForm.querySelector("." + dateBoxes[i] + "Input");
+			var datebox2 = activityCreationForm.querySelector("." + dateBoxes[i+1] + "Input");
+			
+			if (datebox1.value > datebox2.value) {
+				datesInOrder = false;
+				break;
+			}
+		}
+		if (!datesInOrder) {
+			console.log("fail")
+			var errorBox = activityCreationForm.querySelector(".errorBox");
+			errorBox.textContent = "Error: Please ensure that the listed dates are in order";
+			return false;
+		}
+		
 		console.log("pass")
 		return true;
 	}

@@ -1,20 +1,29 @@
-<!DOCTYPE html>
 <?php
-	require_once "pdo.php";
-	
-	if($userData["employeeid"]) {
-		$activities = getSQLData("Call Get_Supervisor_Activities({$userData['personid']})");
-		$userData["studentid"] = 0;
-	}
-	elseif ($userData["studentid"]) {
-		$activities = getSQLData("Call Get_Student_Activities({$userData['studentid']})");
-	}
-	else {
-		$activities = getSQLData("Call Get_Supervisor_Activities({$userData['personid']})");
-		$userData["studentid"] = 0;
-	}
-?>
+	require_once "..\pdo.php";
 
+	//////////////////////
+	//		Select		//
+	//////////////////////
+
+	$currentUser = 2;
+
+	// Selecting all categories
+	$sql = "SELECT DISTINCT `scalefaq`.`category` FROM `scalefaq`
+			WHERE `scalefaq`.`isactive` = TRUE
+			ORDER BY `category`";
+	$categoriesquery = $pdo->query($sql);
+
+	$questionCategories = [];
+	
+	while ($categoryRow = $categoriesquery->fetch(PDO::FETCH_ASSOC)) {
+		array_push($questionCategories, $categoryRow['category']);
+	}
+	$categoriesquery->closeCursor();
+
+	// Selecting all questions
+	$questions = getSQLData("Call Get_All_Questions()");
+?>
+<!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
@@ -27,6 +36,7 @@
 		<link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
 		<link href="/scaleSite/css/styles.css" rel="stylesheet" />
 		<link href="/scaleSite/css/scaleStyle.css" rel="stylesheet"/>
+		<link href="/scaleSite/css/scaleFAQStyle.css" rel="stylesheet" />
 		<script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
 	</head>
 	<body class="sb-nav-fixed">
@@ -88,6 +98,10 @@
 								<div class="sb-nav-link-icon"><i class="fas fa-chalkboard-user"></i></div>
 								SCALE FAQ
 							</a>
+							<a class="nav-link" href="/scaleSite/scale/scaleFAQ_Coordinators.php">
+								<div class="sb-nav-link-icon"><i class="fas fa-chalkboard-user"></i></div>
+								SCALE FAQ Editing (For coordinators only)
+							</a>
 						</div>
 					</div>
 					<div class="sb-sidenav-footer">
@@ -105,65 +119,69 @@
 					#####################################
 
 					-->
-					<div class="container-fluid px-4">
-						<h1 class="mt-4">Dashboard</h1>
-						<ol class="breadcrumb mb-4">
-							<li class="breadcrumb-item active">Dashboard</li>
-						</ol>
-						<div class="row">
-							<div class="col-xl-3 col-md-6">
-								<div class="card bg-primary text-white mb-4">
-									<div class="card-body">Evaluations</div>
-									<div class="card-body">Teaching Performance Evaluations will be made available on 28 May 2024 at 5.00p. Click on the link on the navigation bar when the service is ready.</div>
+					
+					<button id="questionNavbarButton" class="btn btn-primary" type="button" data-bs-toggle="offcanvas" data-bs-target="#questionSectionNavbar" aria-controls="questionSectionNavbar"> > </button>
+
+					<div id="questionSectionNavbar" class="offcanvas offcanvas-end h-auto p-3" data-bs-backdrop="false" data-bs-scroll="true" aria-labelledby="offcanvasRightLabel">
+						<div class="offcanvas-header p-0" id="questionNavbarTitle">
+							<h6 class="mb-0"><a class="nav-link" id="sectionNavbarHeader" href="#">Sections</a></h6>
+						</div>
+						<hr>
+						<div class="offcanvas-body p-0" id="questionNavbarContent">
+							<?php
+								foreach ($questionCategories as $category) {
+									echo "<a href='#".$category."Section' class='nav-link'>$category</a>";
+								}
+							?>
+						</div>
+					</div>
+
+					<h1 class="text-center mt-4">SCALE Frequently Asked Questions</h2>
+
+					
+					<div data-bs-spy="scroll" data-bs-target="#questionSectionNavbar" data-bs-root-margin="0px 0px -40%" class="scrollspy-example bg-body-tertiary p-3 rounded-2" tabindex="0">
+					<?php
+
+						$previouscategory = NULL;
+
+						foreach($questions as $question) {
+
+							$qid = $question['scalefaqid'];
+							$qquestion = $question['question'];
+							$qcategory = $question['category'];
+							$qanswer = $question['answer'];
+
+							if ($qcategory != $previouscategory) {
+								// Checks that a previous category existed to prevent closing a div that doesn't exist.
+								if ($previouscategory) {
+									if ($previouscategory) echo '</div>';
+								}
+								
+								echo '<div class="accordion accordion-flush container-fluid mb-3" id="'.$qcategory.'Section">';
+								echo "<h2>$qcategory</h2>";
+								$previouscategory = $qcategory;
+							}
+					?>
+						<div class="accordion-item ms-4">
+							<h2 class="accordion-header" id="<?php echo 'question'.$qid ?>">
+								<button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#<?php echo 'answer'.$qid ?>" aria-expanded="true" aria-controls="<?php echo 'answer'.$qid ?>">
+									<?php echo $qquestion?>
+								</button>
+							</h2>
+							<div id="<?php echo 'answer'.$qid ?>" class="accordion-collapse collapse" aria-labelledby="<?php echo 'question'.$qid ?>">
+								<div class="accordion-body">
+									<?php echo $qanswer?>
 								</div>
 							</div>
 						</div>
-
-						<!-- My SCALE (Adult Supervisors)-->
-						<ol class="breadcrumb mb-4">
-							<li class="breadcrumb-item active">My SCALE</li>
-						</ol>
-
-						<div class="row">
-							<?php foreach ($activities as $activity) { $activityid = $activity["activityid"]; ?>
-								<div class="col-xl-3 col-lg-4 col-md-6">
-									<div class="card mb-4 border-dark">
-										<div class="card-header bg-primary border-dark">
-											<h6 class="card-title text-center text-white"><?= $activity["activityname"] ?></h6>
-										</div>
-										<div class="card-body">
-											<div class="mb-1">
-												<?php
-													$activitystrands = getSQLData("Call get_activity_strands($activityid, {$userData['studentid']})");
-
-													foreach($activitystrands as $strand) {
-														echo "<span class='badge activityStrandBadge'>".$strand["scalereqshortname"]."</span>";
-													}
-												?>
-											</div>
-											<div class="mb-2">
-												<?php
-												$activitylos = getSQLData("Call get_activity_los($activityid, {$userData['studentid']})");
-
-												foreach($activitylos as $lo) {
-													echo "<span class='badge activityLOBadge scale".$lo["scalereqshortname"]."' style='height: 20px; width: 20px;'>".substr($lo["scalereqshortname"], 2)."</span>";
-												}
-												?>
-											</div>
-											<div class="row mb-2">
-												<!--
-                                                    This section would have contained notifactions about the SCALE activity. (New submissions, new applicants, info edited, etc.)
-                                                -->
-											</div>
-											<a href="scale/mySCALE.php#<?= $activity["activityname"] ?>Card" type="button" class="btn btn-primary scaleActivityMore">View More</a>
-										</div>
-									</div>
-								</div>
-
-							<?php } ?>
-						</div>
+					<?php
+						}
 						
+						// At the end of the while loop, the last category will still be unclosed. This if statements checks if questions even loaded then closes the category if it did exist.
+						if ($previouscategory) echo '</div>';
+					?>
 					</div>
+					
 				</main>
 				<footer class="py-4 bg-light mt-auto">
 					<div class="container-fluid px-4">

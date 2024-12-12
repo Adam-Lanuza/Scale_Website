@@ -295,7 +295,7 @@
 						<!-- Submit Buttons -->
 						<div>
 							<div class="errorBox text-danger mb-2"></div>
-							<a href="mySCALE.php" class="btn btn-danger submit">Back</a>
+							<a href="availableActivities.php" class="btn btn-danger submit">Back</a>
 							<button type="submit" class="btn btn-primary submit" name="join" value="join">Join Activity</button>
 						</div>
 					</form>

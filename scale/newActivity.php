@@ -46,7 +46,7 @@
 	}
 
 	if ($allReqSessionValuesFilled and $userData['personid']) {
-		$stmt = $pdo->prepare("CALL Create_Activity(:ti, :ac, :ty, :psd, :ped, :isd, :ied, :v, :d, :o, :p, :ib)");
+		$stmt = $pdo->prepare("CALL Create_Activity(:ti, :ac, :ty, :psd, :ped, :isd, :ied, :v, :d, :o, :p, :ib, @aid)");
 		$stmt->execute(array(
 			':ti' => $_SESSION["title"],
 			':ac' => $_SESSION["activitycode"],
@@ -61,39 +61,48 @@
 			':p' => $_SESSION["publicity"],
 			':ib' => $userid
 		));
-		
-		// Gets the activityid of the recently added activity
-		$sql = "SELECT `activityid` FROM `activities`
-				ORDER BY insertedby DESC
-				LIMIT 1;";
-		$stmt = $pdo->query($sql);
-		unset($_SESSION["activityid"]);
-		$_SESSION["activityid"] = ($stmt->fetch(PDO::FETCH_ASSOC))["activityid"];
+
+		$newActivityID = $stmt->fetch(PDO::FETCH_ASSOC)['aid'];
 
 		// Adds the activity creator to the newly created activity depending on the creator's type
 		if ($userData['studentid']) {
-			$stmt = $pdo->prepare("CALL Add_Student_to_Activity(:sid, :aid, :p, :s, :ib)");
+			$stmt = $pdo->prepare("CALL Add_Student_to_Activity(:sid, :aid, :p, :s, :ib, @asid)");
 			$stmt->execute(array(
 				':sid' => $userData['studentid'],
-				':aid' => $_SESSION["activityid"],
+				':aid' => $newActivityID,
 				':p' => "Organizer",
 				':s' => "P",
 				':ib' => $userid
 			));
+			$newActivityStudentID = $stmt->fetch(PDO::FETCH_ASSOC)['asid'];
 			$_SESSION["success"] = "Activity Successfully Added";
+
+			foreach($ALL_SCALE_REQS as $scaleReq => $scaleReqDesc) {
+				if(isset($_SESSION[$scaleReq])) {
+					$stmt = $pdo->prepare("CALL `Add_Student_Scale_Req` (:asid, :sreq, :said, :ib)");
+					$stmt->execute(array(
+						':asid' => $newActivityStudentID,
+						':sreq' => $scaleReq,
+						':said' => 1,
+						':ib' => $userid
+					));
+					unset($_SESSION[$scaleReq]);
+					$stmt -> closeCursor();
+				}
+			}
 		}
 		else {
 			$stmt = $pdo->prepare("CALL Add_Adult_Supervisor(:pid, :aid, :pos, :ib)");
 			$stmt->execute(array(
 				':pid' => $userData['personid'],
-				':aid' => $_SESSION["activityid"],
+				':aid' => $newActivityID,
 				':pos' => "Primary Adult Supervisor",
 				':ib' => $userid
 			));
 
 			$stmt = $pdo->prepare("CALL Approve_Activity(:aid)");
 			$stmt->execute(array(
-				':aid' => $_SESSION["activityid"]
+				':aid' => $newActivityID
 			));
 			$_SESSION["success"] = "Activity Successfully Added";
 		}
@@ -111,6 +120,12 @@
 
 		foreach ($reqFields as $field) {
 			$_SESSION[$field] = $_POST[$field];
+		}
+
+		foreach($ALL_SCALE_REQS as $scaleReq => $scaleReqDesc) {
+			if(isset($_POST[$scaleReq])) {
+				$_SESSION[$scaleReq] = $scaleReq;
+			}
 		}
 
 		header("Location: newActivity.php");
@@ -215,6 +230,14 @@
 							<input type="text" class="form-control titleInput" name="title" id="activityTitle">
 						</div>
 
+						<?php
+							foreach($ALL_SCALE_REQS as $scaleReq => $scaleReqDesc) {
+								if(isset($_SESSION[$scaleReq])) {
+									echo "<p>{$_SESSION[$scaleReq]}</p>";
+								}
+							}
+						?>
+
 						<!-- Type -->
 						<div class="mb-3">
 							<span class="h6 me-3">Activity Type: </span>
@@ -233,13 +256,13 @@
 						</div>
 
 						<!-- Strand and Learning Outcome Information -->
-                        <div class="row mb-3">
+						<div class="row mb-3">
 							<div class="col-lg-3 my-2">
 								<span class="h6 me-3">Strands: </span>
 								<?php foreach($ALL_STRANDS as $shortname => $desc) { ?>
 									<div class="form-check">
 										<label class="form-check-label">
-											<input type="checkbox" class="form-check-input" name="<?= $shortname ?>" value="TRUE">
+											<input type="checkbox" class="form-check-input" name="<?= $shortname ?>" value="<?= $shortname ?>">
 											<?= $desc ?>
 										</label>
 									</div>
@@ -250,7 +273,7 @@
 								<?php foreach($ALL_LOS as $shortname => $desc) { ?>
 									<div class="form-check">
 										<label class="form-check-label">
-											<input type="checkbox" class="form-check-input" name="<?= $shortname ?>" value="TRUE">
+											<input type="checkbox" class="form-check-input" name="<?= $shortname ?>" value="<?= $shortname ?>">
 											<?= $desc ?>
 										</label>
 									</div>
@@ -292,9 +315,11 @@
 							<input type="text" class="form-control col venueInput" name="venue" id="venue">
 						</div>
 
+						<!--
 						<ol class="breadcrumb mb-4">
 							<li class="breadcrumb-item active">Activity Description</li>
 						</ol>
+						-->
 						
 						<!-- General Description -->
 						<div class="mb-3">
@@ -308,9 +333,11 @@
 							<textarea name="objectives" id="objectives" class="form-control objectivesInput"></textarea>
 						</div>
 
+						<!--
 						<ol class="breadcrumb mb-4">
 							<li class="breadcrumb-item active">Activity Publicity</li>
 						</ol>
+						-->
 
 						<!-- Activity Publicity -->
 						<div class="mb-3">

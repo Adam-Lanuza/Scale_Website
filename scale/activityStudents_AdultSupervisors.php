@@ -1,20 +1,8 @@
-<!DOCTYPE html>
-<?php
-	require_once "pdo.php";
-	
-	if($userData["employeeid"]) {
-		$activities = getSQLData("Call Get_Supervisor_Activities({$userData['personid']})");
-		$userData["studentid"] = 0;
-	}
-	elseif ($userData["studentid"]) {
-		$activities = getSQLData("Call Get_Student_Activities({$userData['studentid']})");
-	}
-	else {
-		$activities = getSQLData("Call Get_Supervisor_Activities({$userData['personid']})");
-		$userData["studentid"] = 0;
-	}
-?>
+<!--
+    Not needed anymore (Logistically replaced by managePeople.php)
+-->
 
+<!DOCTYPE html>
 <html lang="en">
 	<head>
 		<meta charset="utf-8" />
@@ -27,6 +15,7 @@
 		<link href="https://cdn.jsdelivr.net/npm/simple-datatables@7.1.2/dist/style.min.css" rel="stylesheet" />
 		<link href="/scaleSite/css/styles.css" rel="stylesheet" />
 		<link href="/scaleSite/css/scaleStyle.css" rel="stylesheet"/>
+		<link href="/scaleSite/css/activityStudentsStyle.css" rel="stylesheet" />
 		<script src="https://use.fontawesome.com/releases/v6.3.0/js/all.js" crossorigin="anonymous"></script>
 	</head>
 	<body class="sb-nav-fixed">
@@ -98,69 +87,93 @@
 			</div>
 			<div id="layoutSidenav_content">
 				<main>
-					<!--
-
-					#####################################
-					#	We code in this block - Adam	#
-					#####################################
-
-					-->
 					<div class="container-fluid px-4">
-						<h1 class="mt-4">Dashboard</h1>
+						<h1 class="mt-4">Activity Name</h1>
+
+						<span class="input-group mb-2" id="activityCodeForm">
+							<input type="text" class="form-control" placeholder="Search Student"/>
+							<button type="button" class="btn btn-primary" data-mdb-ripple-init><i class="fas fa-search"></i></button>
+						</span>
+
 						<ol class="breadcrumb mb-4">
-							<li class="breadcrumb-item active">Dashboard</li>
+							<li class="breadcrumb-item active">Active Students</li>
 						</ol>
-						<div class="row">
-							<div class="col-xl-3 col-md-6">
-								<div class="card bg-primary text-white mb-4">
-									<div class="card-body">Evaluations</div>
-									<div class="card-body">Teaching Performance Evaluations will be made available on 28 May 2024 at 5.00p. Click on the link on the navigation bar when the service is ready.</div>
+						
+						<div class="accordion accordion-flush" id="accordionExample">
+							<div class="accordion-item">
+								<div class="accordion-header collapsed bg-transparent">
+									<img src="https://i1.sndcdn.com/artworks-000140019692-3ogprd-t500x500.jpg">
+									<div class="studentHeaderInformation">
+										<h5>Chungus, Ben Ivan G.</h5>
+										<span class="studentStrandsTaken">
+											<span class="badge activityStrandBadge">S</span>
+											<span class="badge activityStrandBadge">C</span>
+											<span class="badge activityStrandBadge">A</span>
+											<span class="badge activityStrandBadge">L</span>
+										</span>
+									</div>
+									<button class="btn btn-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
+										View Details
+									</button>
 								</div>
-							</div>
-						</div>
-
-						<!-- My SCALE (Adult Supervisors)-->
-						<ol class="breadcrumb mb-4">
-							<li class="breadcrumb-item active">My SCALE</li>
-						</ol>
-
-						<div class="row">
-							<?php foreach ($activities as $activity) { $activityid = $activity["activityid"]; ?>
-								<div class="col-xl-3 col-lg-4 col-md-6">
-									<div class="card mb-4 border-dark">
-										<div class="card-header bg-primary border-dark">
-											<h6 class="card-title text-center text-white"><?= $activity["activityname"] ?></h6>
+								
+								<div id="collapseOne" class="collapse row" aria-labelledby="headingOne" data-parent="#accordionExample">
+									<div class="col-1">
+										<div class="vr"></div>
+									</div>
+									<div class="col-11">
+										<div class="informationSection personalInformation">
+											<h5>Personal Information</h5>
+											<ul>
+												<li>Batch: 2025</li>
+												<li>Silid: 11-J</li>
+											</ul>
+											<hr>
 										</div>
-										<div class="card-body">
-											<div class="mb-1">
-												<?php
-													$activitystrands = getSQLData("Call get_activity_strands($activityid, {$userData['studentid']})");
+										<div class="informationSection activityInformation">
+											<h5>Activity Information</h5>
+											<ul>
+												<li>Permissions: Editing</li>
+												<li>
+													Learning Outcomes: 
+													<span>
+														<span class="badge activityLOBadge LO1">1</span>
+														<span class="badge activityLOBadge LO2">2</span>
+														<span class="badge activityLOBadge LO3">3</span>
+														<span class="badge activityLOBadge LO4">4</span>
+														<span class="badge activityLOBadge LO5">5</span>
+														<span class="badge activityLOBadge LO6">6</span>
+														<span class="badge activityLOBadge LO7">7</span>
+														<span class="badge activityLOBadge LO8">8</span>
+													</span>
+												</li>
+											</ul>
+											<div>
+												<button class="btn btn-outline-dark mx-3 mb-3" type="button">Edit Strands and LOs</button>
+												<button class="btn btn-outline-dark mx-3 mb-3" type="button">Edit Permissions</button>
+											</div>
+                                            <!--
+                                            Cut due to time
 
-													foreach($activitystrands as $strand) {
-														echo "<span class='badge activityStrandBadge'>".$strand["scalereqshortname"]."</span>";
-													}
-												?>
+											<div class="container notificationsBox">
+												<div class="row notification">
+													<div class="col-auto">(mm-dd-yyyy) Documentation: <span>Approved</span></div>
+													<div class="col"><hr></div>
+													<div class="col-auto"><a href="#">View Submission</a></div>
+												</div>
+												<div class="row notification">
+													<div class="col-auto">(03-14-2024) Activity Information Edited: <span>Waiting for Approval</span></div>
+													<div class="col"><hr></div>
+													<div class="col-auto"><a href="#">View Submission</a></div>
+												</div>
 											</div>
-											<div class="mb-2">
-												<?php
-												$activitylos = getSQLData("Call get_activity_los($activityid, {$userData['studentid']})");
-
-												foreach($activitylos as $lo) {
-													echo "<span class='badge activityLOBadge scale".$lo["scalereqshortname"]."' style='height: 20px; width: 20px;'>".substr($lo["scalereqshortname"], 2)."</span>";
-												}
-												?>
-											</div>
-											<div class="row mb-2">
-												<!--
-                                                    This section would have contained notifactions about the SCALE activity. (New submissions, new applicants, info edited, etc.)
-                                                -->
-											</div>
-											<a href="scale/mySCALE.php#<?= $activity["activityname"] ?>Card" type="button" class="btn btn-primary scaleActivityMore">View More</a>
+                                            -->
+											<hr>
 										</div>
 									</div>
 								</div>
-
-							<?php } ?>
+								<hr class="endingLine">
+							</div>
 						</div>
 						
 					</div>

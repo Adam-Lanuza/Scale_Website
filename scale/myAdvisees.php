@@ -1,5 +1,7 @@
 <?php
 	require_once "..\pdo.php";
+
+	$advisees = getSQLData("SELECT * FROM `scaleadvisors` WHERE employeeid = {$userData['userid']} OR 1");
 ?>
 
 <!DOCTYPE html>
@@ -96,6 +98,32 @@
 
 						<!-- Summary Statistics Card -->
 						<div class="card mb-5 w-75 mx-auto">
+							<?php
+								$sql = "SELECT
+											v.employeeid,
+											COUNT(v.studentid) AS 'studentcount',
+											v.scalereqid,
+											v.description,
+											v.shortname
+										FROM (
+											SELECT DISTINCT
+												scaleadvisors.employeeid,
+												scaleadvisors.studentid,
+												studentscalereqs.scalerequirementid AS 'scalereqid',
+												scalerequirements.description,
+												scalerequirements.shortname
+											FROM scaleadvisors
+											LEFT JOIN activitystudents ON activitystudents.studentid = scaleadvisors.studentid
+											LEFT JOIN studentscalereqs ON studentscalereqs.activitystudentid = activitystudents.activitystudentid
+											LEFT JOIN scalerequirements ON scalerequirements.scalerequirementid = studentscalereqs.scalerequirementid
+											WHERE scaleadvisors.employeeid = 2
+												AND studentscalereqs.isactive AND activitystudents.isactive
+											ORDER BY studentscalereqs.scalerequirementid, scaleadvisors.studentid) v
+										GROUP BY v.scalereqid
+										ORDER BY v.scalereqid;";
+								$scaleReqCount = getSQLData($sql);
+							?>
+
 							<div class="card-body">
 								<h4 class="card-title text-center mb-4">Advisee SCALE Completion Status</h4>
 
@@ -115,7 +143,21 @@
 									<div class="d-flex align-items-center"><span class="legendBox aheadOfTime"></span>Ahead of Time: 3/15</div>
 								</div>
 								
-								<div class="row row-cols-4">
+								<div class="row row-cols-2 row-cols-lg-4">
+									<?php
+										foreach($scaleReqCount as $scaleReq) {
+									?>
+										<div class="d-flex flex-column align-items-center">
+											<h5><?= $scaleReq['shortname'] ?></h5>
+											<div class="progress border border-dark mb-2 w-75" style="height: 45px;">
+												<p><?= floor(100*$scaleReq['studentcount']/15) ?>%</p>
+												<div class="progress-bar bg-success" role="progressbar" style="width: <?= 100*$scaleReq['studentcount']/15 ?>%" aria-valuenow="75" aria-valuemin="0" aria-valuemax="100"></div>
+											</div>
+											<p><?= $scaleReq['studentcount'] ?>/15 Complete</p>
+										</div>
+									<?php		
+										}
+									?>
 									<div class="d-flex flex-column align-items-center">
 										<h5>S</h5>
 										<div class="progress border border-dark mb-2 w-75" style="height: 45px;">
@@ -155,67 +197,88 @@
 							<li class="breadcrumb-item active">Advisee Details</li>
 						</ol>
 						
-						<div class="accordion accordion-flush" id="accordionExample">
-							<div class="accordion-item">
-								<div class="accordion-header collapsed bg-transparent d-flex position-relative mb-3">
-									<img src="https://i1.sndcdn.com/artworks-000140019692-3ogprd-t500x500.jpg">
-									<div class="studentHeaderInformation">
-										<h5>Chungus, Ben Ivan G.</h5>
-										<span class="studentStrandsTaken">
-											<span class="badge activityStrandBadge">S</span>
-											<span class="badge activityStrandBadge">C</span>
-											<span class="badge activityStrandBadge">A</span>
-											<span class="badge activityStrandBadge">L</span>
-										</span>
-									</div>
-									<div class="position-absolute top-50 end-0 translate-middle-y">
-										<button class="btn btn-secondary my-auto" type="button" data-bs-toggle="collapse" data-bs-target="#collapseOne" aria-expanded="true" aria-controls="collapseOne">
-											View Details
-										</button>
-									</div>
-								</div>
-								
-								<div id="collapseOne" class="collapse row" aria-labelledby="headingOne" data-parent="#accordionExample">
-									<div class="col-1">
-										<div class="vr"></div>
-									</div>
-									<div class="col-11">
-										<div class="informationSection personalInformation">
-											<h5>Personal Information</h5>
-											<ul>
-												<li>Batch: 2025</li>
-												<li>Silid: 11-J</li>
-											</ul>
-											<hr>
+						<?php
+							$sql = "SELECT scaleadvisors.*, persons.fullname FROM scaleadvisors
+									JOIN students ON students.studentid = scaleadvisors.studentid
+									JOIN persons ON persons.personid = students.personid
+									WHERE scaleadvisors.employeeid = 2
+										AND scaleadvisors.isactive AND students.isactive";
+							$advisees = getSQLData($sql);
+
+							foreach($advisees as $advisee) {
+						?>
+							<div class="accordion accordion-flush" id="advisee<?= $advisee['scaleadvisorid'] ?>Accordian">
+								<div class="accordion-item">
+									<div class="accordion-header collapsed bg-transparent d-flex position-relative mb-3">
+										<img src="https://i1.sndcdn.com/artworks-XJdVplPCbvDvJlH7-jF9c4A-t500x500.jpg">
+										<div class="studentHeaderInformation">
+											<h5><?= $advisee['fullname'] ?></h5>
+											<span class="studentStrandsTaken">
+												<?php foreach($ALL_STRANDS as $shortname => $desc) { 
+													echo "<span class='badge activityStrandBadge'>".$shortname."</span>";
+												} ?>
+											</span>
 										</div>
-										<div class="informationSection activityInformation">
-											<h5>Activity Information</h5>
-											<ul>
-												<li>Permissions: Editing</li>
-												<li>
-													Learning Outcomes: 
-													<span>
-														<span class="badge activityLOBadge LO1">1</span>
-														<span class="badge activityLOBadge LO2">2</span>
-														<span class="badge activityLOBadge LO3">3</span>
-														<span class="badge activityLOBadge LO4">4</span>
-														<span class="badge activityLOBadge LO5">5</span>
-														<span class="badge activityLOBadge LO6">6</span>
-														<span class="badge activityLOBadge LO7">7</span>
-														<span class="badge activityLOBadge LO8">8</span>
-													</span>
-												</li>
-											</ul>
-											<div>
-												<button class="btn btn-outline-dark mx-3 mb-3" type="button">Edit Strands and LOs</button>
+										<div class="position-absolute top-50 end-0 translate-middle-y">
+											<button class="btn btn-secondary my-auto" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $advisee['scaleadvisorid'] ?>" aria-expanded="true" aria-controls="collapse<?= $advisee['scaleadvisorid'] ?>">
+												View Details
+											</button>
+										</div>
+									</div>
+									
+									<div id="collapse<?= $advisee['scaleadvisorid'] ?>" class="collapse row" aria-labelledby="heading<?= $advisee['scaleadvisorid'] ?>" data-parent="#advisee<?= $advisee['scaleadvisorid'] ?>Accordian">
+										<div class="col-1">
+											<div class="vr"></div>
+										</div>
+										<div class="col-11">
+											<div class="informationSection personalInformation">
+												<h5>Personal Information</h5>
+												<ul>
+													<li>Batch: To be provided in sir Edge's schema</li>
+													<li>Silid: To be provided in sir Edge's schema</li>
+												</ul>
+												<hr>
 											</div>
-											<hr>
+											<div class="informationSection activityInformation">
+												<h5>Activity Information</h5>
+
+												<?php
+													$sql = "CALL GET_Student_Activities({$advisee['studentid']})";
+													$adviseeActivities = getSQLData($sql);
+
+													foreach ($adviseeActivities as $activity) {
+												?>
+
+												<div class="mt-3 ms-4">
+													<h6><?= $activity['activityname'] ?></h6>
+													<ul>
+														<li>Status: <?= $activity['activitystatus'] ?></li>
+														<li>Position: <?= $activity['activityposition'] ?></li>
+														<li>
+															Strands: 
+															<?php foreach(getSQLData("CALL Get_Activity_Strands({$activity['activityid']}, {$advisee['studentid']})") as $strand) { 
+																echo "<span class='badge activityStrandBadge'>".$strand['scalereqshortname']."</span>";
+															} ?>
+														</li>
+														<li>
+															Learning Outcomes: 
+															<?php foreach(getSQLData("CALL Get_Activity_LOs({$activity['activityid']}, {$advisee['studentid']})") as $lo) { 
+																echo "<span class='badge activityLOBadge'>".substr($lo['scalereqshortname'], 2)."</span>";
+															} ?>
+														</li>
+														<button class="btn btn-outline-dark mt-2 btn-sm" type="button">Edit Strands and LOs</button>
+													</ul>
+												</div>
+
+												<?php } ?>
+												<hr>
+											</div>
 										</div>
 									</div>
+									<hr class="endingLine">
 								</div>
-								<hr class="endingLine">
 							</div>
-						</div>
+						<?php } ?>
 					</div>
 				</main>
 				<footer class="py-4 bg-light mt-auto">

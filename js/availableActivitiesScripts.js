@@ -13,12 +13,12 @@ function insertData (ev) {
 
 	var strands = card.querySelectorAll(".activityStrandBadge");
 	for (var strand of strands) {
-		modal.querySelector(".activityStrands").innerHTML += "<span class='badge activityStrandBadge text-bg-success'>" + strand.innerHTML + "</span>";
+		modal.querySelector("#"+strand.innerHTML).classList.add("text-bg-success");
 	}
 
 	var los = card.querySelectorAll(".activityLOBadge");
 	for (var lo of los) {
-		modal.querySelector(".activityLOs").innerHTML += "<span class='badge activityLOBadge'>" + lo.innerHTML + "</span>";
+		modal.querySelector("#LO"+lo.innerHTML).classList.add("text-bg-success");
 	}
 }
 
@@ -27,9 +27,17 @@ function clearData () {
 
 	modal.querySelector('#activityTitle').innerHTML = "";
 	modal.querySelector('#activityDescription').innerHTML = "";
-	modal.querySelector('.activityStrands').innerHTML = "";
-	modal.querySelector('.activityLOs').innerHTML = "";
 	modal.querySelector('#applyButton').href = "#";
+
+	var strands = modal.querySelectorAll(".activityStrandBadge");
+	for (var strand of strands) {
+		strand.classList.remove("text-bg-success");
+	}
+
+	var los = modal.querySelectorAll(".activityLOBadge");
+	for (var lo of los) {
+		lo.classList.remove("text-bg-success");
+	}
 }
 
 document.getElementById('activityModal').addEventListener('show.bs.modal', function(){insertData(event)})

@@ -44,6 +44,7 @@
 	if (isset($_POST["add"]) && ($_POST["add"] == "Adult Supervisor") && isset($_POST["name"]) && isset($_POST["position"])) {
 		$sql = "SELECT * FROM persons
 				WHERE (persons.fullname = '".$_POST["name"]."') OR (CONCAT(persons.givenname, ' ', persons.familyname) = '".$_POST["name"]."');";
+		
 		$persons = getSQLData($sql);
 		
 		if($persons) {
@@ -74,7 +75,7 @@
 			':s' => "IP-P",
 			':ib' => $userid
 		));
-		$asid = $stmt->fetch(PDO::FETCH_ASSOC)['asid'];
+        $asid = $stmt->fetch(PDO::FETCH_ASSOC)['asid'];
 
 		$stmt->closeCursor();
 

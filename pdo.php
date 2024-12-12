@@ -54,7 +54,7 @@ function getUserData($userid) {
 	return $userData;
 }
 
-$userid = 3;
+$userid = 26;
 $userData = getUserData($userid);
 ?>
 
