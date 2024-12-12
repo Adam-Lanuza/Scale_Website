@@ -86,7 +86,7 @@
 			$stmt ->closeCursor();
 		}
 		
-		$_SESSION["success"] = "Activity ".$activityInfo["name"]." Updated Succesfully";
+		$_SESSION["success"] = "Activity <span class='text-decoration-underline'>".$_SESSION["title"]."</span> Updated Succesfully";
 
 		clearSessionValues(array_merge($ALL_SCALE_REQS, $reqFields));
 		header("Location: editActivity.php?activityId=".$_GET["activityId"]);
@@ -214,7 +214,7 @@
 						<h1 class="mt-4">Edit  <span class="fst-italic text-decoration-underline px-3"><?= $activityInfo["name"] ?></span>  Information </h1>
 						<?php
 						if (isset($_SESSION["success"])) {
-							echo "<p class='text-success'>".$_SESSION["success"]."</p>";
+							echo "<p class='text-success h3 ms-3'>".$_SESSION["success"]."</p>";
 							unset($_SESSION["success"]);
 						}?>
 						<ol class="breadcrumb mb-4">
