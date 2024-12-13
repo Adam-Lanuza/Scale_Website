@@ -230,14 +230,6 @@
 							<input type="text" class="form-control titleInput" name="title" id="activityTitle">
 						</div>
 
-						<?php
-							foreach($ALL_SCALE_REQS as $scaleReq => $scaleReqDesc) {
-								if(isset($_SESSION[$scaleReq])) {
-									echo "<p>{$_SESSION[$scaleReq]}</p>";
-								}
-							}
-						?>
-
 						<!-- Type -->
 						<div class="mb-3">
 							<span class="h6 me-3">Activity Type: </span>
