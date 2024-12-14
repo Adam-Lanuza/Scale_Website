@@ -1,0 +1,18 @@
+How to build the database using databseStrutcture.sql
+
+1.) Download the files and open up xampp
+2.) Beside the module "sql", press the "admin" button. A page on your browser should pop up.
+3.) Create a new database and call it "scalesite"
+4.) Open the database and go to the "import" tab
+5.) Select the files "databaseStructure.sql", "dataImport.sql", and "procedures.sql"
+6.) Scroll down and press go
+7.) The database has succesfully been set-up
+
+# Note that you need to setup the structure first before importing procedures and data.
+
+Connecting the sql to the html
+1.) In your database, go to the "sql" folder
+2.) Type in "GRANT ALL ON scalesite.* TO 'admin'@'localhost' IDENTIFIED BY 'scaleable';"
+3.) Press run
+
+ - The set-up should be done. If you want, you can change "admin" and "scaleable" into any username and password you want. Just make sure that they are the same values as the "new PDO" statement in pdo.php
